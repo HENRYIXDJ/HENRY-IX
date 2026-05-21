@@ -111,7 +111,7 @@ function HeroNode({ isDepth }: { isDepth: boolean }) {
         style={{ y: yText, scale: scaleText }}
       >
         <motion.h1 
-          className="font-sans text-[12vw] sm:text-8xl md:text-[10rem] lg:text-[11rem] font-bold tracking-wider leading-none text-center select-none text-primary whitespace-nowrap"
+          className="font-sans text-[15vw] w-full font-bold tracking-wider leading-none text-center select-none text-primary whitespace-nowrap"
           initial={{ y: 100, opacity: 0, scale: 0.95 }}
           animate={{ y: 0, opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
