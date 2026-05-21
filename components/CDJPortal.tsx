@@ -10,6 +10,8 @@ import { playClick } from '@/lib/audioUtils';
 import { SynthesizerKnob, RotaryKnob, SplitFlapText, LEDEqualizer } from '@/components/DJComponents';
 import AudioVisualizerBackground from './AudioVisualizerBackground';
 import { useAudio } from './AudioProvider';
+import { useAudioStore } from '@/store/audioStore';
+
 
 const formatTime = (secs: number) => {
   if (isNaN(secs) || secs === undefined) return "00:00";
@@ -2175,11 +2177,16 @@ function MixArchive({
 
 export default function CDJPortal({ isDepth = true, activeView: initialActiveView = 'cdj' }: { isDepth?: boolean, activeView?: 'cdj' | 'tracklist' }) {
   const [activeView, setActiveView] = useState<'cdj' | 'tracklist'>(initialActiveView);
+
+  // Reactive deck state from Zustand — granular subscriptions, no cascade
+  const decks = useAudioStore(s => s.decks);
+  const crossfader = useAudioStore(s => s.crossfader);
+  const leftActiveDeck = useAudioStore(s => s.leftActiveDeck);
+  const rightActiveDeck = useAudioStore(s => s.rightActiveDeck);
+  const { setDecks, setCrossfader, setLeftActiveDeck, setRightActiveDeck } = useAudioStore();
+
+  // Non-reactive engine refs + imperative functions from context
   const {
-    decks, setDecks,
-    crossfader, setCrossfader,
-    leftActiveDeck, setLeftActiveDeck,
-    rightActiveDeck, setRightActiveDeck,
     playTrack, playLockoutBlip,
     widgetRefs, initAudioDSP, loadLocalFile, seekLocalBuffer,
     audioElementsRef, playPendingRef, scratchingRef
