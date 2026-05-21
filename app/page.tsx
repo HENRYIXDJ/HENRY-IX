@@ -795,6 +795,17 @@ function SocialDock({ isDepth }: { isDepth: boolean }) {
     </motion.div>
   );
 }
+function CRTOverlay() {
+  return (
+    <>
+      <div className="crt-scanlines" aria-hidden="true" />
+      <div className="crt-vignette" aria-hidden="true" />
+      <div className="crt-roll" aria-hidden="true" />
+      <div className="vhs-glitch-bar" aria-hidden="true" />
+    </>
+  );
+}
+
 function AbstractLighting() {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 bg-black">
@@ -1007,6 +1018,7 @@ export default function DJPortal() {
       className="min-h-screen w-full relative overflow-x-hidden selection:bg-primary/30"
     >
       <Preloader />
+      <CRTOverlay />
       <GlobalAudioPlayer />
       <NavigationBar isDepth={isDepth} />
       
