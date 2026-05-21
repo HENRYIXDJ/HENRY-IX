@@ -776,6 +776,8 @@ function GlobalAudioPlayer() {
     loadSCWidgetAPI();
   }, []);
 
+  const [isHovered, setIsHovered] = useState(false);
+
   const togglePlay = () => {
     if (!isReady || !widgetRef.current) return;
     
@@ -797,10 +799,15 @@ function GlobalAudioPlayer() {
       <motion.div 
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn("fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 pr-4 rounded-full text-white transition-colors", isReady ? "cursor-pointer hover:bg-zinc-800" : "opacity-50 cursor-not-allowed")}
+        className={cn(
+          "fixed bottom-6 right-6 z-[60] flex items-center bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-full text-white transition-colors overflow-hidden", 
+          isReady ? "cursor-pointer hover:bg-zinc-800" : "opacity-50 cursor-not-allowed"
+        )}
         onClick={togglePlay}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0 z-10">
           {!isReady ? (
             <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
           ) : isPlaying ? (
@@ -809,12 +816,34 @@ function GlobalAudioPlayer() {
             <Play className="w-5 h-5 text-black ml-1" fill="currentColor" />
           )}
         </div>
-        <div className="flex flex-col hidden sm:flex">
+        
+        <motion.div 
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ 
+            width: isHovered ? 140 : 0, 
+            opacity: isHovered ? 1 : 0,
+            marginLeft: isHovered ? 12 : 0,
+            marginRight: isHovered ? (isPlaying ? 12 : 16) : 0
+          }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className="flex flex-col overflow-hidden whitespace-nowrap"
+        >
           <span className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest leading-tight">Now Playing</span>
-          <span className="text-xs font-semibold tracking-wide truncate max-w-[150px]">Knight Club: Session 1</span>
-        </div>
+          
+          <div className="overflow-hidden relative w-full">
+            <motion.div
+              animate={isHovered ? { x: ["0%", "-50%"] } : { x: "0%" }}
+              transition={{ repeat: Infinity, duration: 6, ease: "linear" }}
+              className="text-xs font-semibold tracking-wide flex gap-4 w-max"
+            >
+              <span>Knight Club: Session 1</span>
+              <span>Knight Club: Session 1</span>
+            </motion.div>
+          </div>
+        </motion.div>
+
         {isPlaying && (
-          <div className="flex gap-0.5 items-end h-4 ml-1">
+          <div className="flex gap-0.5 items-end h-4 pr-3 shrink-0 z-10 ml-2">
              {[1,2,3].map(i => (
                <motion.div 
                  key={i}
