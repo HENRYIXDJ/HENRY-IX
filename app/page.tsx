@@ -127,7 +127,7 @@ function HeroNode({ isDepth }: { isDepth: boolean }) {
          animate={{ opacity: 0.4, y: 0 }}
          transition={{ ...SPRING_CONFIG, delay: 1.5 }}
          whileHover={{ opacity: 1, y: 5 }}
-         className="absolute bottom-12 font-mono text-xs tracking-widest uppercase flex flex-col items-center gap-2 cursor-pointer z-10"
+         className="absolute bottom-16 font-mono text-xs tracking-widest uppercase flex flex-col items-center gap-2 cursor-pointer z-10"
          onClick={() => {
            const vault = document.getElementById('vault');
            if (vault) vault.scrollIntoView({ behavior: 'smooth' });
