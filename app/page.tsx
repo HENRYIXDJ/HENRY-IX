@@ -18,7 +18,7 @@ function NavigationBar({ isDepth }: { isDepth: boolean }) {
 
   const navClasses = cn(
     "fixed top-4 md:top-8 z-50 rounded-lg border backdrop-blur-md overflow-hidden transition-colors duration-300",
-    isDepth ? "border-zinc-800 bg-zinc-950/80 text-zinc-100" : "border-black/10 bg-white/40 text-zinc-900"
+    isDepth ? "border-zinc-800 bg-zinc-950 text-zinc-100" : "border-black/10 bg-white text-zinc-900"
   );
 
   return (
