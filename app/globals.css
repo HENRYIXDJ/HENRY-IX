@@ -273,3 +273,37 @@
 
   100% { opacity: 0; }
 }
+
+/* ─── GPU ACCELERATED DJ CONTROLLER ROTATIONS ──────────────────── */
+@keyframes gpu-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-gpu-spin {
+  animation: gpu-spin 4.8s linear infinite;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+.animate-gpu-spin-paused {
+  animation-play-state: paused;
+}
+
+/* ─── FULLSCREEN SECTION NAVIGATOR ──────────────────────────────── */
+.section-nav-link {
+  display: block;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+  transition: letter-spacing 0.2s ease;
+}
+.section-nav-link:hover .section-nav-text {
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 40px rgba(216, 22, 63, 0.5);
+}
+.section-nav-text {
+  display: inline-block;
+  transition: letter-spacing 0.2s ease, text-shadow 0.2s ease;
+}
+

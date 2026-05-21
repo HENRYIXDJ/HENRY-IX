@@ -20,12 +20,27 @@ export const metadata: Metadata = {
   description: 'Interactive DJ portfolio for Henry IX',
 };
 
+import { AudioProvider } from '@/components/AudioProvider';
+import ClientLayoutWrappers from '@/components/ClientLayoutWrappers';
+
+
+
+
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" className={`${avathe.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <link rel="preload" href="https://w.soundcloud.com/player/api.js" as="script" />
+      </head>
       <body suppressHydrationWarning className="bg-black">
-        {children}
-        <Analytics />
+        <AudioProvider>
+          <ClientLayoutWrappers />
+          
+          
+          
+          {children}
+          <Analytics />
+        </AudioProvider>
       </body>
     </html>
   );

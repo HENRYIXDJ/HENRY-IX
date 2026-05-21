@@ -1,14 +1,9 @@
 import { ImageResponse } from 'next/og';
 
-import { readFile } from 'fs/promises';
-import path from 'path';
-
 export const size = { width: 32, height: 32 };
 export const contentType = 'image/png';
 
-export default async function Icon() {
-  const fontData = await readFile(path.join(process.cwd(), 'app/fonts/avathe.otf'));
-
+export default function Icon() {
   return new ImageResponse(
     (
       <div
@@ -18,11 +13,11 @@ export default async function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'black',
-          borderRadius: '50%',
-          color: '#D8163F',
-          fontSize: 18,
-          fontFamily: 'Avathe',
+          backgroundColor: 'transparent',
+          color: 'black',
+          fontSize: 20,
+          fontWeight: 'bold',
+          fontFamily: 'sans-serif',
         }}
       >
         IX
@@ -30,13 +25,7 @@ export default async function Icon() {
     ),
     {
       ...size,
-      fonts: [
-        {
-          name: 'Avathe',
-          data: fontData,
-          style: 'normal',
-        },
-      ],
     }
   );
 }
+

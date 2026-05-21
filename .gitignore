@@ -5,3 +5,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Custom exclusions
+*.py
+*.tsbuildinfo
+*.bak
+public/*.wav
+public/*.m4a
