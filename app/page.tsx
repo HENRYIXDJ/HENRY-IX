@@ -797,10 +797,10 @@ function GlobalAudioPlayer() {
       <motion.div 
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn("fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-full text-white transition-colors", isReady ? "cursor-pointer hover:bg-zinc-800" : "opacity-50 cursor-not-allowed")}
+        className={cn("fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 pr-4 rounded-full text-white transition-colors", isReady ? "cursor-pointer hover:bg-zinc-800" : "opacity-50 cursor-not-allowed")}
         onClick={togglePlay}
       >
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
           {!isReady ? (
             <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
           ) : isPlaying ? (
@@ -809,8 +809,12 @@ function GlobalAudioPlayer() {
             <Play className="w-5 h-5 text-black ml-1" fill="currentColor" />
           )}
         </div>
+        <div className="flex flex-col hidden sm:flex">
+          <span className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest leading-tight">Now Playing</span>
+          <span className="text-xs font-semibold tracking-wide truncate max-w-[150px]">Knight Club: Session 1</span>
+        </div>
         {isPlaying && (
-          <div className="flex gap-0.5 items-end h-4 ml-1 pr-2">
+          <div className="flex gap-0.5 items-end h-4 ml-1">
              {[1,2,3].map(i => (
                <motion.div 
                  key={i}
