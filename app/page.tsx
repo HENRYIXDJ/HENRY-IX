@@ -751,18 +751,14 @@ function GlobalAudioPlayer() {
     <motion.div 
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-6 right-6 z-[60] flex items-center gap-3 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 pr-4 rounded-full text-white cursor-pointer hover:bg-zinc-800 transition-colors"
+      className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-full text-white cursor-pointer hover:bg-zinc-800 transition-colors"
       onClick={togglePlay}
     >
       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
         {isPlaying ? <Pause className="w-5 h-5 text-black" fill="currentColor" /> : <Play className="w-5 h-5 text-black ml-1" fill="currentColor" />}
       </div>
-      <div className="flex flex-col">
-        <span className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest leading-tight">Now Playing</span>
-        <span className="text-xs font-semibold tracking-wide">Henry IX - Live at The Vault</span>
-      </div>
       {isPlaying && (
-        <div className="flex gap-0.5 items-end h-4 ml-2">
+        <div className="flex gap-0.5 items-end h-4 ml-1 pr-2">
            {[1,2,3].map(i => (
              <motion.div 
                key={i}
