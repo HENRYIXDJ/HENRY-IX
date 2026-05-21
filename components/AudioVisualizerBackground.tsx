@@ -66,23 +66,22 @@ export default function AudioVisualizerBackground({
         dataArrayRef.current = new Uint8Array(bufferLength);
 
         const tick = () => {
-          if (analyser) {
-            analyser.getByteFrequencyData(dataArrayRef.current!);
+          if (analyser && dataArrayRef.current) {
+            analyser.getByteFrequencyData(dataArrayRef.current);
           }
-          // Transfer a copy of the typed array to the worker
-          const snapshot = dataArrayRef.current ? dataArrayRef.current.slice() : new Uint8Array(64);
+          // Pass raw array directly — structured cloning of a tiny typed array
+          // is optimised by the browser and avoids the per-frame allocation that
+          // .slice() caused (which was triggering GC micro-stutters at 60fps).
           const mX = mouseX && mouseX.get ? mouseX.get() : window.innerWidth / 2;
           const mY = mouseY && mouseY.get ? mouseY.get() : window.innerHeight / 2;
 
-          worker.postMessage({
+          workerRef.current?.postMessage({
             type: 'frame',
-            frequencyData: snapshot,
+            frequencyData: dataArrayRef.current,
             isPlaying,
             mouseX: isFinite(mX) ? mX : window.innerWidth / 2,
             mouseY: isFinite(mY) ? mY : window.innerHeight / 2,
             isDepth,
-            width: window.innerWidth,
-            height: window.innerHeight,
           });
 
           rafRef.current = requestAnimationFrame(tick);

@@ -258,6 +258,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mountedDecks]);
 
+  // Cached LCD DOM node refs — populated lazily on first tick, never queried again
+  const lcdRefsRef = useRef<Record<number, HTMLElement | null>>({});
+
   // ── DOM-only LCD time display (avoids React state for 60fps counter) ────
   useEffect(() => {
     let frameId: number;
@@ -269,8 +272,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         [1, 2, 3, 4].forEach(deckId => {
           const audio = audioElementsRef.current[deckId];
           if (audio && audio.src) {
+            // Cache the element reference on first access — getElementById inside
+            // a 60fps rAF loop was adding unnecessary DOM query overhead every frame.
+            if (!lcdRefsRef.current[deckId]) {
+              lcdRefsRef.current[deckId] = document.getElementById(`lcd-time-${deckId}`);
+            }
+            const lcdEl = lcdRefsRef.current[deckId];
             const timeStr = formatTime(audio.currentTime);
-            const lcdEl = document.getElementById(`lcd-time-${deckId}`);
             if (lcdEl && lcdEl.innerText !== timeStr) lcdEl.innerText = timeStr;
           }
         });

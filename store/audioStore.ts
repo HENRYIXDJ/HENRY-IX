@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { trackWaveforms } from '@/app/trackWaveforms';
+// useShallow is re-exported here so consumers can import from one place:
+//   import { useAudioStore, useShallow } from '@/store/audioStore';
+export { useShallow } from 'zustand/react/shallow';
+
 
 // ---------------------------------------------------------------------------
 // Types
@@ -213,22 +217,47 @@ export const useAudioStore = create<AudioStoreState>()(
 );
 
 // ---------------------------------------------------------------------------
-// Convenience selector helpers (stable references — won't cause extra renders)
+// Convenience selector helpers
 // ---------------------------------------------------------------------------
+
+/** Returns the DeckState for a given deck id (stable — same object ref unless that deck changed). */
 export const selectDeck = (id: number) => (s: AudioStoreState) => s.decks[id];
-export const selectCrossfader = (s: AudioStoreState) => s.crossfader;
-export const selectIsMuted = (s: AudioStoreState) => s.isMuted;
+
+/** Primitive selectors — always pass strict equality without useShallow. */
+export const selectCrossfader     = (s: AudioStoreState) => s.crossfader;
+export const selectIsMuted        = (s: AudioStoreState) => s.isMuted;
+export const selectLeftActiveDeck = (s: AudioStoreState) => s.leftActiveDeck;
+
+/**
+ * Returns the deck id (number | undefined) of the currently playing deck.
+ * Returns a primitive so useAudioStore(selectActiveDeckId) never false-fires.
+ */
+export const selectActiveDeckId = (s: AudioStoreState): number =>
+  [1, 2, 3, 4].find(id => s.decks[id]?.isPlaying) ?? s.leftActiveDeck ?? 1;
+
+/**
+ * Returns an object with active deck info.
+ *
+ * ⚠️  ALWAYS wrap with useShallow when using in a React component:
+ *
+ *   import { useAudioStore, selectActiveDeckInfo, useShallow } from '@/store/audioStore';
+ *   const info = useAudioStore(useShallow(selectActiveDeckInfo));
+ *
+ * Without useShallow, Zustand's strict equality (old === new) will always
+ * fail because a new object is allocated on every selector invocation,
+ * causing unnecessary re-renders even when no values changed.
+ */
 export const selectActiveDeckInfo = (s: AudioStoreState) => {
-  const playing = [1, 2, 3, 4].find(id => s.decks[id]?.isPlaying);
-  const deck = playing ? s.decks[playing] : s.decks[s.leftActiveDeck] ?? s.decks[1];
+  const playingId = [1, 2, 3, 4].find(id => s.decks[id]?.isPlaying);
+  const deck = playingId ? s.decks[playingId] : s.decks[s.leftActiveDeck] ?? s.decks[1];
   return {
-    id: deck.id,
-    title: deck.title,
+    id:        deck.id,
+    title:     deck.title,
     isPlaying: deck.isPlaying,
-    isReady: deck.isReady,
-    bpm: deck.bpm,
-    progress: deck.progress,
-    duration: deck.duration,
+    isReady:   deck.isReady,
+    bpm:       deck.bpm,
+    progress:  deck.progress,
+    duration:  deck.duration,
   };
 };
 
