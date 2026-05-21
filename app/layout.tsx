@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/react';
 
 const avathe = localFont({
   src: './fonts/avathe.otf',
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="en" className={`${avathe.variable} ${jetbrainsMono.variable}`}>
-      <body suppressHydrationWarning className="bg-black">{children}</body>
+      <body suppressHydrationWarning className="bg-black">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

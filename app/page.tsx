@@ -48,6 +48,7 @@ function NavigationBar({ isDepth }: { isDepth: boolean }) {
             >
               {[
                 { name: 'MIX ARCHIVE', icon: AudioLines, href: '#vault' },
+                { name: 'EVENTS', icon: Calendar, href: '#schedule' },
                 { name: 'CONTACT ME', icon: Disc, href: '#booking' }
               ].map((link, i) => (
                 <motion.a
@@ -364,16 +365,28 @@ function Schedule({ isDepth }: { isDepth: boolean }) {
 
   return (
     <section id="schedule" className="w-full relative py-32 px-6 max-w-7xl mx-auto scroll-mt-24">
-      <div className="mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">02 / Tour Node</h2>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ ...SPRING_CONFIG }}
+        className="mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+      >
+        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">02 / Events</h2>
         <div className={cn("h-[1px] flex-grow w-full md:w-auto md:ml-8", isDepth ? "bg-zinc-800" : "bg-black/20")} />
-      </div>
+      </motion.div>
 
       <div className="space-y-4">
         {(!gigs || gigs.length === 0) ? (
-          <div className="w-full flex justify-center py-12 border-b border-dashed transition-colors border-zinc-800/50">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ ...SPRING_CONFIG, delay: 0.1 }}
+            className="w-full flex justify-center py-12 border-b border-dashed transition-colors border-zinc-800/50"
+          >
              <span className="font-mono text-sm tracking-widest opacity-50 uppercase">No upcoming shows</span>
-          </div>
+          </motion.div>
         ) : (
           gigs.map((gig, i) => (
            <motion.div 
@@ -448,12 +461,24 @@ function ContactForm({ isDepth }: { isDepth: boolean }) {
 
   return (
     <section id="booking" className="w-full relative py-32 px-6 max-w-7xl mx-auto flex flex-col items-center scroll-mt-24">
-      <div className="w-full mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ ...SPRING_CONFIG }}
+        className="w-full mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+      >
         <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">Contact Me</h2>
         <div className={cn("h-[1px] flex-grow w-full md:w-auto md:ml-8", isDepth ? "bg-zinc-800" : "bg-black/20")} />
-      </div>
+      </motion.div>
 
-      <div className="w-full max-w-2xl">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ ...SPRING_CONFIG, delay: 0.1 }}
+        className="w-full max-w-2xl"
+      >
         <form className="space-y-8 block" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
@@ -540,7 +565,7 @@ function ContactForm({ isDepth }: { isDepth: boolean }) {
             {status !== 'loading' && <ArrowRight className="w-4 h-4" />}
           </motion.button>
         </form>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -611,6 +636,44 @@ function SocialDock({ isDepth }: { isDepth: boolean }) {
   );
 }
 
+function Preloader() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {loading && (
+        <motion.div
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="fixed inset-0 z-[100] bg-black flex items-center justify-center pointer-events-auto"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.8,
+              ease: "easeInOut",
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+            className="font-sans text-6xl md:text-8xl text-primary font-bold tracking-widest"
+          >
+            IX
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function DJPortal() {
   const isDepth = true;
 
@@ -624,6 +687,7 @@ export default function DJPortal() {
       transition={{ type: 'spring', stiffness: 80, damping: 20 }}
       className="min-h-screen w-full relative overflow-x-hidden selection:bg-primary/30"
     >
+      <Preloader />
       <NavigationBar isDepth={isDepth} />
       
       <HeroNode isDepth={isDepth} />
