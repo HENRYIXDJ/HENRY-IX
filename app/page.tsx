@@ -17,8 +17,8 @@ function NavigationBar({ isDepth }: { isDepth: boolean }) {
   const [navHovered, setNavHovered] = useState(false);
 
   const navClasses = cn(
-    "fixed top-4 md:top-8 z-50 rounded-lg border backdrop-blur-md overflow-hidden transition-colors duration-300",
-    isDepth ? "border-zinc-800 bg-zinc-950 text-zinc-100" : "border-black/10 bg-white text-zinc-900"
+    "fixed top-4 md:top-8 z-50 rounded-lg border overflow-hidden transition-colors duration-300",
+    isDepth ? "border-zinc-800 bg-zinc-950 text-zinc-100" : "border-black bg-white text-zinc-900"
   );
 
   return (
@@ -101,7 +101,7 @@ function HeroNode({ isDepth }: { isDepth: boolean }) {
       <motion.div 
         className={cn(
           "fixed top-0 left-0 w-full h-24 z-40 transition-colors",
-          isDepth ? "bg-black/50 border-b border-zinc-800/50" : "bg-white/50 border-b border-black/10"
+          isDepth ? "bg-black border-b border-zinc-800" : "bg-white border-b border-black/10"
         )}
         style={{ opacity: headerOpacity }}
       />
