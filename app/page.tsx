@@ -591,7 +591,7 @@ function ContactForm({ isDepth }: { isDepth: boolean }) {
         transition={{ ...SPRING_CONFIG }}
         className="w-full mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       >
-        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">04 / Transmission</h2>
+        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">03 / Contact Me</h2>
         <div className={cn("h-[1px] flex-grow w-full md:w-auto md:ml-8", isDepth ? "bg-zinc-800" : "bg-black/20")} />
       </motion.div>
 
