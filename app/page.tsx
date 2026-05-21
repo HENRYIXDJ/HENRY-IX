@@ -729,47 +729,100 @@ function AbstractLighting() {
 
 function GlobalAudioPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const widgetRef = useRef<any>(null);
 
   useEffect(() => {
-    // Placeholder audio for the prototype
-    audioRef.current = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-    audioRef.current.loop = true;
-    audioRef.current.volume = 0.5;
+    const loadSCWidgetAPI = () => {
+      if (!(window as any).SC) {
+        if (!document.querySelector('script[src="https://w.soundcloud.com/player/api.js"]')) {
+          const script = document.createElement('script');
+          script.src = 'https://w.soundcloud.com/player/api.js';
+          script.onload = initPlayer;
+          document.body.appendChild(script);
+        } else {
+          // Script is loading but not ready, wait a bit
+          setTimeout(loadSCWidgetAPI, 100);
+        }
+      } else {
+        initPlayer();
+      }
+    };
+
+    const initPlayer = () => {
+      if (iframeRef.current && (window as any).SC) {
+        const widget = (window as any).SC.Widget(iframeRef.current);
+        widgetRef.current = widget;
+        
+        widget.bind((window as any).SC.Widget.Events.READY, () => {
+          setIsReady(true);
+        });
+
+        widget.bind((window as any).SC.Widget.Events.PLAY, () => {
+          setIsPlaying(true);
+        });
+
+        widget.bind((window as any).SC.Widget.Events.PAUSE, () => {
+          setIsPlaying(false);
+        });
+        
+        widget.bind((window as any).SC.Widget.Events.FINISH, () => {
+          setIsPlaying(false);
+        });
+      }
+    };
+
+    loadSCWidgetAPI();
   }, []);
 
   const togglePlay = () => {
+    if (!isReady || !widgetRef.current) return;
+    
     if (isPlaying) {
-      audioRef.current?.pause();
+      widgetRef.current.pause();
     } else {
-      audioRef.current?.play().catch(e => console.log('Audio play failed:', e));
+      widgetRef.current.play();
     }
-    setIsPlaying(!isPlaying);
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-full text-white cursor-pointer hover:bg-zinc-800 transition-colors"
-      onClick={togglePlay}
-    >
-      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-        {isPlaying ? <Pause className="w-5 h-5 text-black" fill="currentColor" /> : <Play className="w-5 h-5 text-black ml-1" fill="currentColor" />}
-      </div>
-      {isPlaying && (
-        <div className="flex gap-0.5 items-end h-4 ml-1 pr-2">
-           {[1,2,3].map(i => (
-             <motion.div 
-               key={i}
-               className="w-1 bg-primary"
-               animate={{ height: ['20%', '100%', '20%'] }}
-               transition={{ duration: 0.5 + (i * 0.1), repeat: Infinity, ease: 'easeInOut' }}
-             />
-           ))}
+    <>
+      <iframe 
+        ref={iframeRef}
+        className="hidden"
+        src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/2129822499&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false"
+        allow="autoplay"
+      />
+      <motion.div 
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn("fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-zinc-900/90 backdrop-blur border border-zinc-800 p-2 rounded-full text-white transition-colors", isReady ? "cursor-pointer hover:bg-zinc-800" : "opacity-50 cursor-not-allowed")}
+        onClick={togglePlay}
+      >
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+          {!isReady ? (
+            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+          ) : isPlaying ? (
+            <Pause className="w-5 h-5 text-black" fill="currentColor" />
+          ) : (
+            <Play className="w-5 h-5 text-black ml-1" fill="currentColor" />
+          )}
         </div>
-      )}
-    </motion.div>
+        {isPlaying && (
+          <div className="flex gap-0.5 items-end h-4 ml-1 pr-2">
+             {[1,2,3].map(i => (
+               <motion.div 
+                 key={i}
+                 className="w-1 bg-primary"
+                 animate={{ height: ['20%', '100%', '20%'] }}
+                 transition={{ duration: 0.5 + (i * 0.1), repeat: Infinity, ease: 'easeInOut' }}
+               />
+             ))}
+          </div>
+        )}
+      </motion.div>
+    </>
   );
 }
 
