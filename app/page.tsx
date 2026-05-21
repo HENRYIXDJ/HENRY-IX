@@ -777,60 +777,7 @@ function GlobalAudioPlayer() {
   );
 }
 
-function DynamicCursor() {
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  
-  const springConfig = { damping: 25, stiffness: 700, mass: 0.5 };
-  const cursorXSpring = useSpring(cursorX, springConfig);
-  const cursorYSpring = useSpring(cursorY, springConfig);
-  
-  const [isHovering, setIsHovering] = useState(false);
 
-  useEffect(() => {
-    const moveCursor = (e: MouseEvent) => {
-      cursorX.set(e.clientX - 16);
-      cursorY.set(e.clientY - 16);
-    };
-    
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (window.getComputedStyle(target).cursor === 'pointer' || target.tagName.toLowerCase() === 'a' || target.tagName.toLowerCase() === 'button') {
-        setIsHovering(true);
-      } else {
-        setIsHovering(false);
-      }
-    };
-
-    window.addEventListener('mousemove', moveCursor);
-    window.addEventListener('mouseover', handleMouseOver);
-
-    return () => {
-      window.removeEventListener('mousemove', moveCursor);
-      window.removeEventListener('mouseover', handleMouseOver);
-    };
-  }, [cursorX, cursorY]);
-
-  return (
-    <motion.div
-      className="fixed top-0 left-0 w-8 h-8 rounded-full border-2 border-primary pointer-events-none z-[9999] mix-blend-difference hidden md:block"
-      style={{
-        x: cursorXSpring,
-        y: cursorYSpring,
-      }}
-      animate={{
-        scale: isHovering ? 1.5 : 1,
-        backgroundColor: isHovering ? 'rgba(216, 22, 63, 0.2)' : 'transparent',
-      }}
-      transition={{ type: "spring", stiffness: 500, damping: 28 }}
-    >
-      <motion.div 
-        className="w-1 h-1 bg-primary rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-        animate={{ scale: isHovering ? 0 : 1 }}
-      />
-    </motion.div>
-  );
-}
 function Preloader() {
   const [loading, setLoading] = useState(true);
 
@@ -883,7 +830,6 @@ export default function DJPortal() {
       className="min-h-screen w-full relative overflow-x-hidden selection:bg-primary/30"
     >
       <Preloader />
-      <DynamicCursor />
       <GlobalAudioPlayer />
       <NavigationBar isDepth={isDepth} />
       
