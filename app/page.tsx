@@ -459,7 +459,7 @@ function ContactForm({ isDepth }: { isDepth: boolean }) {
                 required
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="NAME / AGENCY"
+                placeholder="NAME"
                 className={cn(
                    "w-full bg-transparent border-b py-2 font-mono text-xs focus:outline-none transition-colors",
                    isDepth ? "border-zinc-800 focus:border-primary" : "border-black/20 focus:border-primary"
@@ -499,13 +499,13 @@ function ContactForm({ isDepth }: { isDepth: boolean }) {
           <div className="space-y-3">
             <label className="font-mono text-xs tracking-widest opacity-60">TRANSMISSION (DETAILS)</label>
             <textarea 
-              rows={4}
+              rows={1}
               required
               value={formData.details}
               onChange={e => setFormData({ ...formData, details: e.target.value })}
               placeholder="EVENT_SPECIFICATIONS"
               className={cn(
-                 "w-full bg-transparent border-b py-2 font-mono text-xs focus:outline-none transition-colors resize-none",
+                 "w-full bg-transparent border-b py-2 font-mono text-xs focus:outline-none transition-colors resize-y",
                  isDepth ? "border-zinc-800 focus:border-primary" : "border-black/20 focus:border-primary"
               )}
             />
