@@ -161,7 +161,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           const audio = new Audio();
           audio.crossOrigin = 'anonymous';
           audio.loop = false;
-          audio.preload = 'metadata';
+          audio.preload = 'none';
 
           // Don't preload default URLs (they don't exist); only load when user selects a track
           audioElementsRef.current[deckId] = audio;

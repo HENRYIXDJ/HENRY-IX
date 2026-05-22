@@ -43,6 +43,14 @@ const getSessionImage = (title: string) => {
   return '/Knight Club Artwork/Session 1.jpg';
 };
 
+const getTrackDescription = (title: string, isLocalFile: boolean) => {
+  const lower = title.toLowerCase();
+  if (lower.includes('knight club')) return "Born to jest, forced to Joust.";
+  if (lower.includes('royal court')) return "Lose your mind in The Great Hall.";
+  if (lower.includes('corner new cross')) return "Recorded live. A past residency.";
+  return `Recorded live. Features high quality uncompressed audio ${isLocalFile ? "directly from the studio." : "via SoundCloud Integration."}`;
+};
+
 
 // RotaryKnob is imported from @/components/DJComponents
 
@@ -662,9 +670,14 @@ function MixArchive({
   const [slipMode, setSlipMode] = useState<Record<number, boolean>>({
     1: false, 2: false, 3: false, 4: false
   });
+  const slipModeRef = useRef(slipMode);
+  useEffect(() => { slipModeRef.current = slipMode; }, [slipMode]);
+
   const [activeRoll, setActiveRoll] = useState<Record<number, { division: number; startTime: number; virtualTime: number } | null>>({
     1: null, 2: null, 3: null, 4: null
   });
+  const activeRollRef = useRef(activeRoll);
+  useEffect(() => { activeRollRef.current = activeRoll; }, [activeRoll]);
 
   // --- Scratch physics and visual rotation refs ---
   const scratchStateRef = useRef<Record<number, {
@@ -2167,7 +2180,7 @@ function MixArchive({
                     )}
                   </div>
                   <div className="text-xs text-zinc-400 mt-2 line-clamp-2">
-                     Recorded live. Features high quality uncompressed audio {track.isLocalFile ? "directly from the studio." : "via SoundCloud Integration."}
+                     {getTrackDescription(track.title, track.isLocalFile)}
                   </div>
                 </div>
               </div>
