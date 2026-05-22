@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageShell from '@/components/PageShell';
 
@@ -20,15 +20,6 @@ interface GalleryItem {
 }
 
 const GALLERY_IMAGES: GalleryItem[] = [
-  {
-    src: '/gallery/img_0899.jpg',
-    title: 'THE CROWD',
-    category: 'LIVE / ROOM 1',
-    meta: '2026.05.15 - 02:40 AM',
-    details: 'Main room peak energy. Vibrant crowd movement captured under low-frequency bass notes and saturated crimson lighting.',
-    techSpecs: { iso: '3200', aperture: 'f/1.8', shutter: '1/160s', lens: '24mm' },
-    gridClass: 'col-span-1 md:col-span-2 row-span-1 aspect-square md:aspect-[2/1]',
-  },
   {
     src: '/gallery/img_2255.jpg',
     title: 'DECK CONTROLS',
@@ -110,11 +101,16 @@ export default function GalleryPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeIdx === null) return;
-      if (e.key === 'Escape') setActiveIdx(null);
-      else if (e.key === 'ArrowRight') {
-        setActiveIdx((prev) => (prev !== null ? (prev + 1) % GALLERY_IMAGES.length : null));
+      if (e.key === 'Escape') {
+        startTransition(() => setActiveIdx(null));
+      } else if (e.key === 'ArrowRight') {
+        startTransition(() => {
+          setActiveIdx((prev) => (prev !== null ? (prev + 1) % GALLERY_IMAGES.length : null));
+        });
       } else if (e.key === 'ArrowLeft') {
-        setActiveIdx((prev) => (prev !== null ? (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length : null));
+        startTransition(() => {
+          setActiveIdx((prev) => (prev !== null ? (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length : null));
+        });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -158,7 +154,7 @@ export default function GalleryPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: idx * 0.1, ease: 'easeOut' }}
               className={`group overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-900/80 flex flex-col justify-between cursor-pointer hover:border-primary/30 transition-colors duration-500 ${item.gridClass}`}
-              onClick={() => setActiveIdx(idx)}
+              onClick={() => startTransition(() => setActiveIdx(idx))}
             >
               {/* Image Box */}
               <div className="relative flex-grow overflow-hidden aspect-video md:aspect-auto h-full min-h-[220px]">
@@ -170,6 +166,8 @@ export default function GalleryPage() {
                 <img
                   src={item.src}
                   alt={item.title}
+                  decoding="async"
+                  loading="lazy"
                   className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 contrast-125 group-hover:scale-[1.03] transition-all duration-700 ease-out"
                 />
 
@@ -213,7 +211,7 @@ export default function GalleryPage() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="fixed inset-0 z-[100] flex flex-col justify-between bg-black/95 backdrop-blur-xl p-4 md:p-8 select-none"
-              onClick={() => setActiveIdx(null)}
+              onClick={() => startTransition(() => setActiveIdx(null))}
             >
               {/* Lightbox Header / Close */}
               <div className="flex justify-between items-center z-50 w-full max-w-7xl mx-auto pt-2">
@@ -221,7 +219,7 @@ export default function GalleryPage() {
                   ARCHIVE {activeIdx + 1} / {GALLERY_IMAGES.length}
                 </span>
                 <button
-                  onClick={() => setActiveIdx(null)}
+                  onClick={() => startTransition(() => setActiveIdx(null))}
                   className="w-10 h-10 rounded-full bg-zinc-950 border border-zinc-800 hover:border-primary/50 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors active:scale-90"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -239,7 +237,9 @@ export default function GalleryPage() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveIdx((prev) => (prev !== null ? (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length : null));
+                    startTransition(() => {
+                      setActiveIdx((prev) => (prev !== null ? (prev - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length : null));
+                    });
                   }}
                   className="absolute left-0 md:-left-16 z-50 w-12 h-12 rounded-full bg-zinc-950/80 border border-zinc-800 hover:border-primary/50 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
                 >
@@ -254,12 +254,13 @@ export default function GalleryPage() {
                   initial={{ scale: 0.95, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.95, opacity: 0 }}
-                  transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                  transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
                   className="relative max-h-[60vh] md:max-h-[70vh] flex items-center justify-center rounded-xl overflow-hidden border border-zinc-900/60 shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-zinc-950"
                 >
                   <img
                     src={GALLERY_IMAGES[activeIdx].src}
                     alt={GALLERY_IMAGES[activeIdx].title}
+                    decoding="async"
                     className="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain block pointer-events-none"
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_50%)] bg-[length:100%_4px] pointer-events-none z-10 opacity-30" />
@@ -269,7 +270,9 @@ export default function GalleryPage() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveIdx((prev) => (prev !== null ? (prev + 1) % GALLERY_IMAGES.length : null));
+                    startTransition(() => {
+                      setActiveIdx((prev) => (prev !== null ? (prev + 1) % GALLERY_IMAGES.length : null));
+                    });
                   }}
                   className="absolute right-0 md:-right-16 z-50 w-12 h-12 rounded-full bg-zinc-950/80 border border-zinc-800 hover:border-primary/50 text-zinc-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
                 >

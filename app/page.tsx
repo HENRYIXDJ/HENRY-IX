@@ -25,14 +25,57 @@ const HeroNode = React.memo(function HeroNode({
   const { scrollY } = useScroll();
   const smoothScrollY = useSpring(scrollY, { stiffness: 100, damping: 20, mass: 0.2 });
   
-  // Hardware-accelerated parallax (Improvement 3: CSS scroll-driven animations can be done via style, but framer-motion is fine here if optimized)
-  const yText = useTransform(smoothScrollY, [0, 1000], [0, 400]);
-  const scaleText = useTransform(smoothScrollY, [0, 800], [1, 0.8]);
+  // Hardware-accelerated parallax layers
+  const yText = useTransform(smoothScrollY, [0, 1000], [0, 350]);
+  const scaleText = useTransform(smoothScrollY, [0, 800], [1, 0.82]);
   const opacityText = useTransform(smoothScrollY, [0, 600], [1, 0]);
+  
+  // Layered parallax background elements for 3D depth feeling
+  const yBackgroundRing = useTransform(smoothScrollY, [0, 1000], [0, 180]);
+  const yBackgroundGrid = useTransform(smoothScrollY, [0, 1000], [0, -80]);
+  const rotateRing = useTransform(smoothScrollY, [0, 1000], [0, 45]);
+  const yFloatLeft = useTransform(smoothScrollY, [0, 1000], [0, -150]);
+  const yFloatRight = useTransform(smoothScrollY, [0, 1000], [0, -220]);
 
   return (
     <section className="min-h-screen flex flex-col justify-center items-center w-full px-6 relative max-w-7xl mx-auto pt-20 overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
       
+      {/* Dynamic Parallax Background Grid */}
+      <motion.div 
+        className="absolute inset-0 pointer-events-none z-0 opacity-5"
+        style={{ y: yBackgroundGrid, willChange: "transform" }}
+      >
+        <div className="w-full h-full bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:5rem_5rem]" />
+      </motion.div>
+
+      {/* Premium Parallax Background Rings */}
+      <motion.div
+        className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none"
+        style={{ y: yBackgroundRing, rotate: rotateRing, willChange: "transform" }}
+      >
+        <div className="w-[80vw] h-[80vw] border border-primary rounded-full absolute" />
+        <div className="w-[60vw] h-[60vw] border border-dashed border-primary rounded-full absolute" />
+      </motion.div>
+
+      {/* Foreground decorative floating elements (Negative Parallax for high-end 3D depth) */}
+      <motion.div 
+        className="absolute bottom-1/4 left-8 md:left-16 font-mono text-[10px] tracking-[0.2em] opacity-20 text-primary z-10 select-none pointer-events-none hidden sm:flex flex-col gap-1.5"
+        style={{ y: yFloatLeft, willChange: "transform" }}
+      >
+        <span>SYS_STATUS: ACTIVE</span>
+        <span>LATENCY: 0.00ms</span>
+        <span>REFRESH: 144HZ</span>
+      </motion.div>
+
+      <motion.div 
+        className="absolute top-1/4 right-8 md:right-16 font-mono text-[10px] tracking-[0.2em] opacity-20 text-primary z-10 select-none pointer-events-none hidden sm:flex flex-col gap-1.5"
+        style={{ y: yFloatRight, willChange: "transform" }}
+      >
+        <span>LOC: LONDON, UK</span>
+        <span>COORD_X: 51.5074° N</span>
+        <span>COORD_Y: 0.1278° W</span>
+      </motion.div>
+
       <motion.div 
         className="fixed inset-0 flex justify-center items-center z-0 pointer-events-none"
         style={{ y: yText, scale: scaleText, opacity: opacityText, willChange: "transform, opacity" }}
@@ -72,6 +115,31 @@ const HeroNode = React.memo(function HeroNode({
   );
 });
 
+// Scroll-triggered stagger entry variants
+const navContainerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.12,
+    }
+  }
+};
+
+const navItemVariants = {
+  hidden: { opacity: 0, y: 60, skewY: 4 },
+  show: { 
+    opacity: 1, 
+    y: 0, 
+    skewY: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 100,
+      damping: 14,
+      mass: 0.8
+    }
+  }
+};
+
 export default function LandingPage() {
   const isDepth = true;
   const { preloaderComplete } = useAudio();
@@ -103,30 +171,41 @@ export default function LandingPage() {
           }}
         />
 
-        <nav className="flex flex-col items-center gap-6 md:gap-10 w-full px-6 max-w-4xl mx-auto z-10 relative">
+        <motion.nav 
+          variants={navContainerVariants}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: false, margin: "-100px" }}
+          className="flex flex-col items-center gap-6 md:gap-10 w-full px-6 max-w-4xl mx-auto z-10 relative"
+        >
           {[
             { label: 'MIXES', href: '/mixes', desc: 'Enter the CDJ Portal' },
             { label: 'GALLERY', href: '/gallery', desc: 'Visual Archives' },
             { label: 'EVENTS', href: '/events', desc: 'Upcoming Shows' },
             { label: 'CONTACT', href: '/contact', desc: 'Bookings & Info' },
           ].map(({ label, href, desc }) => (
-            <Link
+            <motion.div
               key={label}
-              href={href}
-              className="group block w-full text-center relative"
+              variants={navItemVariants}
+              className="w-full text-center relative"
             >
-              <span
-                className="glitch font-sans font-bold text-primary text-[clamp(2.5rem,10vw,8rem)] leading-none tracking-wider uppercase select-none transition-all duration-300 group-hover:tracking-[0.15em] inline-block"
-                data-text={label}
+              <Link
+                href={href}
+                className="group block w-full text-center relative"
               >
-                {label}
-              </span>
-              <div className="h-0 group-hover:h-6 overflow-hidden transition-all duration-300 opacity-0 group-hover:opacity-100 mt-2">
-                <span className="font-mono text-zinc-500 text-xs tracking-[0.3em] uppercase">{desc}</span>
-              </div>
-            </Link>
+                <span
+                  className="glitch font-sans font-bold text-primary text-[clamp(2.5rem,10vw,8rem)] leading-none tracking-wider uppercase select-none transition-all duration-300 group-hover:tracking-[0.15em] inline-block"
+                  data-text={label}
+                >
+                  {label}
+                </span>
+                <div className="h-0 group-hover:h-6 overflow-hidden transition-all duration-300 opacity-0 group-hover:opacity-100 mt-2">
+                  <span className="font-mono text-zinc-500 text-xs tracking-[0.3em] uppercase">{desc}</span>
+                </div>
+              </Link>
+            </motion.div>
           ))}
-        </nav>
+        </motion.nav>
       </section>
     </motion.main>
   );

@@ -27,6 +27,8 @@ export interface DeckState {
   eqMid: number;
   eqLow: number;
   filter: number;
+  trim: number;
+  syncEnabled: boolean;
   crossfaderAssign: 'L' | 'R' | 'THRU';
   waveformPeaks: number[];
 }
@@ -144,7 +146,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/knight-club-session-1',
     bpm: 145, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, crossfaderAssign: 'L',
+    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'L',
     waveformPeaks: trackWaveforms['kc-1'] ?? generateStaticPeaks(500),
   },
   2: {
@@ -153,7 +155,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/knight-club-session-2',
     bpm: 152, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, crossfaderAssign: 'L',
+    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'L',
     waveformPeaks: trackWaveforms['kc-2'] ?? generateStaticPeaks(500),
   },
   3: {
@@ -162,7 +164,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/knight-club-session-3',
     bpm: 150, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, crossfaderAssign: 'R',
+    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'R',
     waveformPeaks: trackWaveforms['kc-3'] ?? generateStaticPeaks(500),
   },
   4: {
@@ -171,7 +173,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43',
     bpm: 155, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, crossfaderAssign: 'R',
+    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'R',
     waveformPeaks: trackWaveforms['kc-4'] ?? generateStaticPeaks(500),
   },
 };

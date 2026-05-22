@@ -11,6 +11,7 @@
  */
 
 export interface DeckDSPNodes {
+  trimNode: GainNode;
   lowShelf: BiquadFilterNode;
   midPeak: BiquadFilterNode;
   highShelf: BiquadFilterNode;
@@ -123,6 +124,33 @@ export class AudioEngine {
       // Right deck: fades in as crossfader moves right (0 → 50)
       return clamped >= 50 ? 1 : Math.max(0, clamped / 50);
     }
+  }
+
+  /**
+   * Set input Trim (Gain) for a specific deck.
+   * Maps value [0, 100] to a gain multiplier.
+   * 50 is neutral (1.0).
+   * 0 is completely cut (0.0).
+   * 100 is boosted (3.0, representing +9.5 dB).
+   */
+  setTrim(deckId: number, value: number) {
+    if (!this.audioCtx || !this.deckNodes[deckId]) return;
+
+    const nodes = this.deckNodes[deckId];
+    if (!nodes || !nodes.trimNode) return;
+
+    const clamped = Math.max(0, Math.min(100, value));
+    
+    let targetGain: number;
+    if (clamped <= 50) {
+      // 0 to 50: linear map from 0.0 to 1.0
+      targetGain = clamped / 50;
+    } else {
+      // 50 to 100: linear map from 1.0 to 3.0 (+9.5dB boost)
+      targetGain = 1.0 + ((clamped - 50) / 50) * 2.0;
+    }
+
+    nodes.trimNode.gain.setTargetAtTime(targetGain, this.audioCtx.currentTime, 0.015);
   }
 
   /**

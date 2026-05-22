@@ -28,11 +28,11 @@ const getSessionImage = (title: string) => {
   if (title.includes('Knight Club') && title.includes('Session 3')) return '/Knight Club Artwork/Session 3.jpg';
   if (title.includes('Knight Club') && title.includes('Session 4')) return '/Knight Club Artwork/Session 4.jpg';
   
-  if (title.includes('Royal Court') && title.includes('Session 1')) return '/royal-court-session-1.jpg';
-  if (title.includes('Royal Court') && title.includes('Session 2')) return '/royal-court-session-2.jpg';
+  if (title.includes('Royal Court') && title.includes('Session 1')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Royal%20Court%20Artwork/Royal%20Court%20Session%201%20Track%20Artwork.png';
+  if (title.includes('Royal Court') && title.includes('Session 2')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Royal%20Court%20Artwork/Royal%20Court%20Session%202%20Track%20Artwork.png';
   
-  if (title.includes('Corner New Cross') && title.includes('Night 1')) return '/corner-new-cross-night-1.jpg';
-  if (title.includes('Corner New Cross') && title.includes('Night 2')) return '/corner-new-cross-night-2.jpg';
+  if (title.includes('Corner New Cross') && title.includes('Night 1')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Corner%20New%20Cross%20Artwork/CNC%20N1%20Artwork.png';
+  if (title.includes('Corner New Cross') && title.includes('Night 2')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Corner%20New%20Cross%20Artwork/CNC%20N2%20Artwork.png';
 
   // Fallbacks if just matching session
   if (title.includes('Session 1')) return '/Knight Club Artwork/Session 1.jpg';
@@ -624,7 +624,8 @@ function MixArchive({
   seekLocalBuffer,
   audioElementsRef,
   playPendingRef,
-  scratchingRef
+  scratchingRef,
+  alignSyncPlayback
 }: { 
   isDepth: boolean; 
   activeView: 'cdj' | 'tracklist';
@@ -647,6 +648,7 @@ function MixArchive({
   audioElementsRef?: React.RefObject<Record<number, HTMLAudioElement | null>>;
   playPendingRef?: React.MutableRefObject<Record<number, boolean>>;
   scratchingRef?: React.MutableRefObject<Record<number, boolean>>;
+  alignSyncPlayback?: (deckId: number) => void;
 }) {
   const archiveRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
@@ -967,15 +969,15 @@ function MixArchive({
     {
       title: "Royal Court",
       mixes: [
-        { id: 'rc-1', title: 'Royal Court: Session 1', url: '/Royal Court - Session 1.m4a', link: 'https://soundcloud.com/henryixdj/session-1', bpm: 124, isLocalFile: true },
-        { id: 'rc-2', title: 'Royal Court: Session 2', url: '/Royal Court - Session 2.wav', link: 'https://soundcloud.com/henryixdj/01-best-yet', bpm: 125, isLocalFile: true }
+        { id: 'rc-1', title: 'Royal Court: Session 1', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Royal%20Court%20Audio/Royal%20Court%20Session%201%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/session-1', bpm: 124, isLocalFile: true },
+        { id: 'rc-2', title: 'Royal Court: Session 2', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Royal%20Court%20Audio/Royal%20Court%20Session%202%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/01-best-yet', bpm: 125, isLocalFile: true }
       ]
     },
     {
       title: "Corner New Cross",
       mixes: [
-        { id: 'cnc-1', title: 'Corner New Cross: Night 1', url: '/01 Corner New Cross_ Night 1.wav', link: 'https://soundcloud.com/henryixdj/corner-new-cross-night-1', bpm: 128, isLocalFile: true },
-        { id: 'cnc-2', title: 'Corner New Cross: Night 2', url: '/Corner New Cross_ Night 2.wav', link: 'https://soundcloud.com/henryixdj/corner-new-cross-night-2', bpm: 132, isLocalFile: true }
+        { id: 'cnc-1', title: 'Corner New Cross: Night 1', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Corner%20New%20Cross%20Audio/Corner%20New%20Cross%20Night%201%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/corner-new-cross-night-1', bpm: 128, isLocalFile: true },
+        { id: 'cnc-2', title: 'Corner New Cross: Night 2', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Corner%20New%20Cross%20Audio/Corner%20New%20Cross%20Night%202%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/corner-new-cross-night-2', bpm: 132, isLocalFile: true }
       ]
     }
   ];
@@ -1146,24 +1148,23 @@ function MixArchive({
                     return;
                   }
                   playClick(800, 'sine', 0.02);
+                  const nextSyncState = !deck.syncEnabled;
                   const otherDeckId = (deckId === 1 || deckId === 2) ? rightActiveDeck : leftActiveDeck;
                   const otherDeck = decks[otherDeckId];
-                  if (otherDeck) {
-                    const targetBpm = otherDeck.bpm * (1 + (otherDeck.pitch || 0) / 100);
-                    const requiredPitch = ((targetBpm / deck.bpm) - 1) * 100;
-                    const clampedPitch = Math.max(-8, Math.min(8, requiredPitch));
-                    setDecks((prev: any) => ({
-                      ...prev,
-                      [deckId]: { ...prev[deckId], pitch: clampedPitch }
-                    }));
+                  setDecks((prev: any) => ({
+                    ...prev,
+                    [deckId]: { ...prev[deckId], syncEnabled: nextSyncState }
+                  }));
+                  if (nextSyncState && deck.isPlaying && otherDeck && otherDeck.isPlaying && alignSyncPlayback) {
+                    alignSyncPlayback(deckId);
                   }
                 }}
                 className={cn(
                   "w-12 h-12 rounded-xl border flex items-center justify-center font-mono text-[10px] font-black transition-all cursor-pointer active:scale-95",
                   isLocked 
                     ? "bg-zinc-950 border-zinc-900/50 text-zinc-800 cursor-not-allowed"
-                    : isPlaying
-                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.3)] animate-pulse"
+                    : deck.syncEnabled
+                      ? "bg-emerald-500 border-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.6)] font-black"
                       : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
                 )}
               >
@@ -1431,8 +1432,8 @@ function MixArchive({
 
               <input 
                 type="range"
-                min="-8"
-                max="8"
+                min="-16"
+                max="16"
                 step="0.05"
                 value={deck.pitch || 0}
                 onChange={(e) => {
@@ -1464,7 +1465,7 @@ function MixArchive({
               <div 
                 className="absolute w-6 h-5 bg-gradient-to-b from-zinc-700 to-zinc-900 border border-zinc-600 rounded flex items-center justify-center shadow pointer-events-none"
                 style={{ 
-                  bottom: `calc(${(( (deck.pitch || 0) + 8) / 16) * 100}% - 10px)`,
+                  bottom: `calc(${(( (deck.pitch || 0) + 16) / 32) * 100}% - 10px)`,
                   transform: 'translateY(50%)'
                 }}
               >
@@ -1519,9 +1520,15 @@ function MixArchive({
                       ))}
                     </optgroup>
                   ))}
-                  <option value="local" disabled className="bg-zinc-950 text-zinc-500">
-                    -- CUSTOM UPLOAD --
-                  </option>
+                  {deck.id === 'local' ? (
+                    <option value="local" className="bg-zinc-950 text-zinc-300 font-bold uppercase">
+                      {deck.title}
+                    </option>
+                  ) : (
+                    <option value="local" disabled className="bg-zinc-950 text-zinc-500">
+                      -- CUSTOM UPLOAD --
+                    </option>
+                  )}
                 </select>
                 
                 <button
@@ -1763,6 +1770,19 @@ function MixArchive({
 
                 <div className="flex flex-col gap-2">
                   <RotaryKnob 
+                    label="TRIM"
+                    value={deck.trim ?? 50}
+                    size="lg"
+                    onChange={(val) => {
+                      audioEngine.setTrim(id, val);
+                      setDecks((prev: any) => ({
+                        ...prev,
+                        [id]: { ...prev[id], trim: val }
+                      }));
+                    }}
+                    disabled={isLocked}
+                  />
+                  <RotaryKnob 
                     label="HI"
                     value={deck.eqHi}
                     size="lg"
@@ -1974,7 +1994,7 @@ function MixArchive({
   const renderTracklist = () => {
     return (
       <div className="w-full h-full p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6">
-        <h2 className="text-2xl md:text-4xl font-sans font-bold text-primary tracking-widest uppercase glitch" data-text="MIX ARCHIVE">MIX ARCHIVE</h2>
+        <h2 className="text-2xl md:text-4xl font-sans font-bold text-primary tracking-widest uppercase glitch" data-text="01 / MIX ARCHIVE">01 / MIX ARCHIVE</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {mixGroups.flatMap(g => g.mixes).map(track => {
             const isPlaying = activeVisualizer.isPlaying && (
@@ -2142,7 +2162,7 @@ export default function CDJPortal({ isDepth = true, activeView: initialActiveVie
   const {
     playTrack, playLockoutBlip, togglePlayGlobal,
     widgetRefs, initAudioDSP, loadLocalFile, seekLocalBuffer,
-    audioElementsRef, playPendingRef, scratchingRef
+    audioElementsRef, playPendingRef, scratchingRef, alignSyncPlayback
   } = useAudio();
 
   return (
@@ -2168,6 +2188,7 @@ export default function CDJPortal({ isDepth = true, activeView: initialActiveVie
       audioElementsRef={audioElementsRef}
       playPendingRef={playPendingRef}
       scratchingRef={scratchingRef}
+      alignSyncPlayback={alignSyncPlayback}
     />
   );
 }

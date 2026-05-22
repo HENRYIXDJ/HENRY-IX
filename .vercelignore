@@ -1,0 +1,11 @@
+# Ignore heavy binary files in local public folder since they are hosted on Vercel Blob
+public/*.wav
+public/*.m4a
+public/*.zip
+
+# Standard ignores
+.next
+node_modules
+.git
+.env.local
+.env.*.local

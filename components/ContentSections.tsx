@@ -33,7 +33,7 @@ export function Schedule({ isDepth }: { isDepth: boolean }) {
         transition={{ ...SPRING_CONFIG }}
         className="mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       >
-        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">02 / Events</h2>
+        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">03 / Events</h2>
         <div className={cn("h-[1px] flex-grow w-full md:w-auto md:ml-8", isDepth ? "bg-zinc-800" : "bg-black/20")} />
       </motion.div>
 
@@ -127,12 +127,34 @@ export function MerchVault({ isDepth }: { isDepth: boolean }) {
 export function MailingList({ isDepth }: { isDepth: boolean }) {
   const [email, setEmail] = useState('');
   const [joined, setJoined] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    setJoined(true);
+    setStatus('loading');
+    setErrorMessage('');
     playClick(1000, 'sine', 0.1);
+
+    try {
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to establish transmission');
+      }
+
+      setStatus('success');
+      setJoined(true);
+    } catch (err: any) {
+      setStatus('error');
+      setErrorMessage(err.message || 'Transmission failed');
+    }
   };
 
   const validation = useMemo(() => {
@@ -181,7 +203,7 @@ export function MailingList({ isDepth }: { isDepth: boolean }) {
             className="w-full flex flex-col sm:flex-row gap-3 relative"
             onSubmit={handleJoin}
           >
-            <div className="flex-grow flex flex-col items-start">
+            <div className="flex-grow flex flex-col items-start w-full">
               <input 
                 type="email"
                 required
@@ -214,13 +236,20 @@ export function MailingList({ isDepth }: { isDepth: boolean }) {
                   {validation.message}
                 </span>
               </div>
+
+              {status === 'error' && (
+                <div className="text-red-400 font-mono text-[9px] uppercase tracking-widest mt-2 bg-red-950/20 border border-red-800/30 px-3 py-1.5 rounded w-full text-left">
+                  [CRITICAL]: {errorMessage}
+                </div>
+              )}
             </div>
             
             <button 
               type="submit" 
-              className="bg-primary text-black font-mono font-bold uppercase tracking-[0.2em] px-8 py-3 rounded hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(216,22,63,0.3)] transition-all text-xs h-11 magnetic-snap shrink-0 cursor-pointer"
+              disabled={status === 'loading'}
+              className="bg-primary text-black font-mono font-bold uppercase tracking-[0.2em] px-8 py-3 rounded hover:bg-white hover:text-black hover:shadow-[0_0_15px_rgba(216,22,63,0.3)] transition-all text-xs h-11 magnetic-snap shrink-0 cursor-pointer disabled:opacity-50"
             >
-              Join
+              {status === 'loading' ? 'Joining...' : 'Join'}
             </button>
           </motion.form>
         )}
@@ -295,7 +324,7 @@ export function ContactForm({ isDepth }: { isDepth: boolean }) {
         transition={{ ...SPRING_CONFIG }}
         className="w-full mb-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       >
-        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">03 / Contact Me</h2>
+        <h2 className="font-mono text-lg md:text-xl tracking-[0.2em] font-semibold uppercase">04 / Contact Me</h2>
         <div className={cn("h-[1px] flex-grow w-full md:w-auto md:ml-8", isDepth ? "bg-zinc-800" : "bg-black/20")} />
       </motion.div>
 
@@ -427,7 +456,7 @@ export function ContactForm({ isDepth }: { isDepth: boolean }) {
               <span className={cn("font-mono text-[10px] tabular-nums transition-colors", formData.details.length > 450 ? "text-primary" : "opacity-30")}>{formData.details.length}/500</span>
             </div>
             <textarea 
-              rows={4}
+              rows={1}
               required
               maxLength={500}
               value={formData.details}

@@ -14,7 +14,9 @@
     "@hookform/resolvers": "^5.2.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.4.0",
+    "@vercel/speed-insights": "^2.0.0",
     "autoprefixer": "^10.4.21",
+    "botid": "^1.5.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.39.0",
@@ -26,6 +28,7 @@
     "react-dom": "^19.2.1",
     "resend": "^6.12.3",
     "tailwind-merge": "^3.3.1",
+    "workflow": "^4.2.4",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

@@ -3,6 +3,8 @@ import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import { BotIdClient } from 'botid/client';
 
 const avathe = localFont({
   src: './fonts/avathe.otf',
@@ -31,6 +33,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
     <html lang="en" className={`${avathe.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="preload" href="https://w.soundcloud.com/player/api.js" as="script" />
+        <BotIdClient protect={[{ path: '/api/signup', method: 'POST' }]} />
       </head>
       <body suppressHydrationWarning className="bg-black">
         <AudioProvider>
@@ -40,6 +43,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           
           {children}
           <Analytics />
+          <SpeedInsights />
         </AudioProvider>
       </body>
     </html>

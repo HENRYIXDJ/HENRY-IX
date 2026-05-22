@@ -19,12 +19,15 @@ const formatTime = (secs: number) => {
 
 const getSessionImage = (title: string) => {
   if (!title) return '/Knight Club Artwork/Session 1.jpg';
+  if (title.includes('Royal Court') && title.includes('Session 1')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Royal%20Court%20Artwork/Royal%20Court%20Session%201%20Track%20Artwork.png';
+  if (title.includes('Royal Court') && title.includes('Session 2')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Royal%20Court%20Artwork/Royal%20Court%20Session%202%20Track%20Artwork.png';
+  if (title.includes('Corner New Cross') && title.includes('Night 1')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Corner%20New%20Cross%20Artwork/CNC%20N1%20Artwork.png';
+  if (title.includes('Corner New Cross') && title.includes('Night 2')) return 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Corner%20New%20Cross%20Artwork/CNC%20N2%20Artwork.png';
+  
   if (title.includes('Session 1')) return '/Knight Club Artwork/Session 1.jpg';
   if (title.includes('Session 2')) return '/Knight Club Artwork/Session 2.jpg';
   if (title.includes('Session 3')) return '/Knight Club Artwork/Session 3.jpg';
   if (title.includes('Session 4')) return '/Knight Club Artwork/Session 4.jpg';
-  if (title.includes('Night 1')) return '/corner-new-cross-night-1.jpg';
-  if (title.includes('Night 2')) return '/corner-new-cross-night-2.jpg';
   return '/Knight Club Artwork/Session 1.jpg';
 };
 
@@ -67,6 +70,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const masterAnalyserRef = useRef<AnalyserNode | null>(null);
   const deckNodesRef = useRef<Record<number, {
+    trimNode: GainNode;
     lowShelf: BiquadFilterNode;
     midPeak: BiquadFilterNode;
     highShelf: BiquadFilterNode;
@@ -115,6 +119,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       masterAnalyser.connect(ctx.destination);
 
       [1, 2, 3, 4].forEach(deckId => {
+        const trimNode = ctx.createGain();
+        trimNode.gain.value = 1.0;
+
         const lowShelf = ctx.createBiquadFilter();
         lowShelf.type = 'lowshelf';
         lowShelf.frequency.value = 250;
@@ -140,13 +147,14 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         const gainNode = ctx.createGain();
         gainNode.gain.value = 0;
 
+        trimNode.connect(lowShelf);
         lowShelf.connect(midPeak);
         midPeak.connect(highShelf);
         highShelf.connect(filterNode);
         filterNode.connect(gainNode);
         gainNode.connect(masterAnalyser);
 
-        deckNodesRef.current[deckId] = { lowShelf, midPeak, highShelf, filterNode, gainNode };
+        deckNodesRef.current[deckId] = { trimNode, lowShelf, midPeak, highShelf, filterNode, gainNode };
 
         if (typeof window !== 'undefined') {
           const audio = new Audio();
@@ -158,11 +166,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           audioElementsRef.current[deckId] = audio;
 
           const source = ctx.createMediaElementSource(audio);
-          source.connect(lowShelf);
+          source.connect(trimNode);
           mediaSourcesRef.current[deckId] = source;
 
           // Load metadata when available
           audio.addEventListener('loadedmetadata', () => {
+            const state = useAudioStore.getState();
+            const deck = state.decks[deckId];
+            const pitch = deck?.pitch ?? 0;
+            audio.playbackRate = 1 + pitch / 100;
             setDeck(deckId, { duration: audio.duration, isReady: true });
           });
 
@@ -210,6 +222,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           audioEngine.setEQ(deckId, 'mid', deck.eqMid);
           audioEngine.setEQ(deckId, 'high', deck.eqHi);
           audioEngine.setFilter(deckId, deck.filter);
+          audioEngine.setTrim(deckId, deck.trim ?? 50);
           const cfMult = audioEngine.computeCrossfaderGain(deck.crossfaderAssign, state.crossfader);
           audioEngine.setGain(deckId, deck.volume, cfMult, state.isMuted);
         }
@@ -220,6 +233,46 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to initialize Web Audio DSP:', e);
       return null;
     }
+  };
+
+  // ── alignSyncPlayback (Direct BPM & Beat Phase Alignment) ──────────────────
+  const alignSyncPlayback = (targetDeckId: number) => {
+    const state = useAudioStore.getState();
+    const deckB = state.decks[targetDeckId];
+    const audioB = audioElementsRef.current[targetDeckId];
+    if (!deckB || !audioB) return;
+
+    // Find an active playing master deck (excluding target deck, must not be in SoundCloud mode)
+    const masterDeckId = [1, 2, 3, 4].find(
+      id => id !== targetDeckId && state.decks[id]?.isPlaying && !state.decks[id]?.scMode
+    );
+    if (!masterDeckId) return;
+
+    const deckA = state.decks[masterDeckId];
+    const audioA = audioElementsRef.current[masterDeckId];
+    if (!deckA || !audioA) return;
+
+    // 1. Sync BPM: calculate target pitch for Deck B to match Deck A's active BPM
+    const activeBpmA = deckA.bpm * (1 + (deckA.pitch || 0) / 100);
+    const targetPitchB = ((activeBpmA / deckB.bpm) - 1) * 100;
+    const clampedPitchB = Math.max(-16, Math.min(16, targetPitchB));
+    
+    setDeck(targetDeckId, { pitch: clampedPitchB });
+    audioB.playbackRate = 1 + clampedPitchB / 100;
+
+    // 2. Phase alignment
+    const beatIntervalA = 60 / deckA.bpm;
+    const beatIntervalB = 60 / deckB.bpm;
+    
+    const phaseA = (audioA.currentTime % beatIntervalA) / beatIntervalA;
+    const durationB = audioB.duration || deckB.duration || 0;
+    
+    let targetTimeB = Math.round(audioB.currentTime / beatIntervalB) * beatIntervalB + phaseA * beatIntervalB;
+    if (targetTimeB < 0) targetTimeB = 0;
+    if (durationB && targetTimeB > durationB) targetTimeB = durationB;
+    
+    audioB.currentTime = targetTimeB;
+    setDeck(targetDeckId, { progress: targetTimeB });
   };
 
   // ── togglePlayGlobal (React-accessible version) ─────────────────────────
@@ -252,6 +305,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     if (audio.paused) {
       if (audio.readyState >= 2) {
+        if (deck.syncEnabled) {
+          alignSyncPlayback(deckId);
+        }
         playPendingRef.current[deckId] = true;
         audio.play()
           .then(() => { playPendingRef.current[deckId] = false; })
@@ -266,6 +322,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Wait for audio to be ready before calling play()
         const playWhenReady = () => {
           if (audio.readyState >= 2) {
+            const freshDeck = useAudioStore.getState().decks[deckId];
+            if (freshDeck?.syncEnabled) {
+              alignSyncPlayback(deckId);
+            }
             playPendingRef.current[deckId] = true;
             audio.play()
               .then(() => { playPendingRef.current[deckId] = false; })
@@ -439,6 +499,32 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
+  // ── Pitch & PlaybackRate Direct Sync ─────────────────────────────────────
+  useEffect(() => {
+    const unsubscribe = useAudioStore.subscribe(
+      state => [
+        state.decks[1]?.pitch,
+        state.decks[2]?.pitch,
+        state.decks[3]?.pitch,
+        state.decks[4]?.pitch,
+      ],
+      ([p1, p2, p3, p4]) => {
+        const pitches = [p1, p2, p3, p4];
+        [1, 2, 3, 4].forEach(deckId => {
+          const audio = audioElementsRef.current[deckId];
+          if (audio) {
+            const pitch = pitches[deckId - 1] ?? 0;
+            const targetRate = 1 + pitch / 100;
+            if (audio.playbackRate !== targetRate) {
+              audio.playbackRate = targetRate;
+            }
+          }
+        });
+      }
+    );
+    return unsubscribe;
+  }, []);
+
   // NOTE: Removed redundant EQ/Filter/Volume subscription.
   // Components now call audioEngine.setEQ/setFilter/setGain directly for zero-latency updates.
   // Zustand is only updated for UI display—no double-dip DSP calls.
@@ -546,6 +632,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           if (targetPlaying) {
             // Improve error handling for play on same track
             if (audio.readyState >= 2) {
+              if (deck.syncEnabled) {
+                alignSyncPlayback(deckId);
+              }
               playPendingRef.current[deckId] = true;
               audio.play()
                 .then(() => { playPendingRef.current[deckId] = false; })
@@ -559,6 +648,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             } else {
               // Wait for audio to be ready
               const playWhenReady = () => {
+                const freshDeck = useAudioStore.getState().decks[deckId];
+                if (freshDeck?.syncEnabled) {
+                  alignSyncPlayback(deckId);
+                }
                 playPendingRef.current[deckId] = true;
                 audio.play()
                   .then(() => { playPendingRef.current[deckId] = false; })
@@ -598,6 +691,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         // Wait for audio to be ready before playing (fixes "no supported sources" error)
         const playWhenReady = () => {
           if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or better
+            const freshDeck = useAudioStore.getState().decks[deckId];
+            if (freshDeck?.syncEnabled) {
+              alignSyncPlayback(deckId);
+            }
             playPendingRef.current[deckId] = true;
             audio.play()
               .then(() => { playPendingRef.current[deckId] = false; })
@@ -672,7 +769,9 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
     // Show loading state immediately with placeholder peaks
     setDeck(deckId, {
-      title: file.name.substring(0, 30), url: objectUrl,
+      id: 'local',
+      title: file.name,
+      url: objectUrl,
       isReady: false, isPlaying: false, scMode: false,
       progress: 0, duration: 0, bpm: 128,
       waveformPeaks: generateStaticPeaks(500),
@@ -746,7 +845,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audioElementsRef, playPendingRef, scratchingRef, widgetRefs,
       // Stable functions
       initAudioDSP, loadLocalFile, seekLocalBuffer,
-      togglePlayGlobal, playTrack, playLockoutBlip, estimateBPM,
+      togglePlayGlobal, playTrack, playLockoutBlip, estimateBPM, alignSyncPlayback,
       // Lightweight UI state (rarely changes)
       isMuted, setIsMuted,
       preloaderComplete, setPreloaderComplete,

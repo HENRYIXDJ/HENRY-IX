@@ -17,6 +17,7 @@ export default function ClientLayoutWrappers() {
   }, [pathname, preloaderComplete, setPreloaderComplete]);
 
   const showPreloader = pathname === '/' && !preloaderComplete;
+  const isHomePage = pathname === '/';
 
   return (
     <>
@@ -24,7 +25,7 @@ export default function ClientLayoutWrappers() {
         <Preloader onComplete={() => setPreloaderComplete(true)} />
       )}
       <CRTOverlay />
-      <SiteHeader />
+      {!isHomePage && <SiteHeader />}
     </>
   );
 }
