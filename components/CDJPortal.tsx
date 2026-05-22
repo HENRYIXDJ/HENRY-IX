@@ -1633,7 +1633,7 @@ function MixArchive({
                   onPointerUp={(e) => {
                     if (isLocked) return;
                     e.preventDefault();
-                    stopLoopRoll(deck); // wait, stopLoopRoll takes deckId, not deck! Let's pass deckId!
+                    stopLoopRoll(deckId);
                   }}
                   onPointerCancel={(e) => {
                     if (isLocked) return;
