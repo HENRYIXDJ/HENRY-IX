@@ -110,7 +110,7 @@ function DualDeckWaveforms({
     let envelope: number;
     let transientFrequency: number; // ticks spacing (assigned by section-specific branches)
     let transientStrength: number;
-    let compressIntensity = 1.0; // multiplier to represent high limiter density
+    let compressIntensity: number; // multiplier to represent high limiter density
     
     if (progress < introLen) {
       // 1. Intro Beats: periodic kicks
