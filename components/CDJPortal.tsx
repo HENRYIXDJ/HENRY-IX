@@ -107,7 +107,7 @@ function DualDeckWaveforms({
     const secondDropStart = breakdownStart + breakdownLen;
     const outroStart = 0.85 + ((seed >> 6) % 3) * 0.03; // 0.85 to 0.91
     
-    let envelope = 0.15;
+    let envelope: number;
     let transientFrequency = 8; // ticks spacing
     let transientStrength = 0.4;
     let compressIntensity = 1.0; // multiplier to represent high limiter density
