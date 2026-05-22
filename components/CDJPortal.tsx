@@ -428,6 +428,7 @@ function DualDeckWaveforms({
                     const idx = Math.floor(barTime * 14);
                     return getWaveformHeight(deck.id, idx, deck.duration || 300);
                   })();
+                  })();
               
               const eqLow = deck.eqLow ?? 50;
               const eqMid = deck.eqMid ?? 50;
