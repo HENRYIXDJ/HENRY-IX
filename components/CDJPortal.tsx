@@ -108,7 +108,7 @@ function DualDeckWaveforms({
     const outroStart = 0.85 + ((seed >> 6) % 3) * 0.03; // 0.85 to 0.91
     
     let envelope: number;
-    let transientFrequency = 8; // ticks spacing
+    let transientFrequency: number; // ticks spacing (assigned by section-specific branches)
     let transientStrength: number;
     let compressIntensity = 1.0; // multiplier to represent high limiter density
     
