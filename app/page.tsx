@@ -36,7 +36,7 @@ const HeroNode = React.memo(function HeroNode({
   const yFloatRight = useTransform(smoothScrollY, [0, 1000], [0, -220]);
 
   return (
-    <section className="min-h-screen flex flex-col justify-center items-center w-full px-6 relative max-w-7xl mx-auto pt-20 overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
+    <section className="min-h-screen flex flex-col justify-center items-center w-full px-6 relative pt-20 overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
       
       {/* Dynamic Parallax Background Grid */}
       <motion.div 
@@ -235,19 +235,16 @@ export default function LandingPage() {
       <section className="min-h-screen flex flex-col items-center justify-center relative w-full overflow-hidden bg-black z-20" style={{ scrollSnapAlign: 'start' }}>
         
         {/* CDJ Teaser Background */}
-        <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none overflow-hidden mix-blend-screen">
+        <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none overflow-hidden mix-blend-screen">
             <div className="w-[120vw] h-[120vw] border-[1px] border-primary rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-[spin_60s_linear_infinite]" />
             <div className="w-[100vw] h-[100vw] border-[1px] border-dashed border-primary rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-[spin_40s_linear_infinite_reverse]" />
             <div className="w-[80vw] h-[80vw] border-[2px] border-primary rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
         </div>
 
-        <div
-          className="absolute inset-0 opacity-[0.03] pointer-events-none z-0"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.5) 3px, rgba(255,255,255,0.5) 4px)',
-          }}
-        />
+        {/* Dynamic Background Grid matching Section 1 */}
+        <div className="absolute inset-0 pointer-events-none z-0 opacity-5">
+          <div className="w-full h-full bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:5rem_5rem]" />
+        </div>
 
         <motion.nav 
           variants={navContainerVariants}
