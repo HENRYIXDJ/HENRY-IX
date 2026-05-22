@@ -67,6 +67,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [preloaderComplete]);
 
+  // ── Initialize Audio DSP and preload on mount ────────────────────────────
+  useEffect(() => {
+    initAudioDSP();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Web Audio persistent DSP routing nodes ──────────────────────────────
   const audioContextRef = useRef<AudioContext | null>(null);
   const masterAnalyserRef = useRef<AnalyserNode | null>(null);
@@ -161,9 +167,17 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           const audio = new Audio();
           audio.crossOrigin = 'anonymous';
           audio.loop = false;
-          audio.preload = 'none';
+          audio.preload = 'auto';
 
-          // Don't preload default URLs (they don't exist); only load when user selects a track
+          // Map initial URLs to pre-cache them
+          const state = useAudioStore.getState();
+          const deck = state.decks[deckId];
+          if (deck?.url) {
+            audio.src = new URL(deck.url, window.location.origin).href;
+            loadedUrlsRef.current[deckId] = deck.url;
+            audio.load();
+          }
+
           audioElementsRef.current[deckId] = audio;
 
           const source = ctx.createMediaElementSource(audio);
@@ -320,31 +334,44 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             }
           });
       } else {
-        // Wait for audio to be ready before calling play()
-        const playWhenReady = () => {
-          if (audio.readyState >= 2) {
-            const freshDeck = useAudioStore.getState().decks[deckId];
-            if (freshDeck?.syncEnabled) {
-              alignSyncPlayback(deckId);
-            }
-            playPendingRef.current[deckId] = true;
-            audio.play()
-              .then(() => { playPendingRef.current[deckId] = false; })
-              .catch(err => {
-                playPendingRef.current[deckId] = false;
-                if (err.name !== 'AbortError') {
-                  console.warn(`Play failed on deck ${deckId}:`, err.message);
-                  setDeck(deckId, { isPlaying: false });
+        // Attempt synchronous play first to lock in user gesture
+        playPendingRef.current[deckId] = true;
+        if (deck.syncEnabled) {
+          alignSyncPlayback(deckId);
+        }
+        audio.play()
+          .then(() => { playPendingRef.current[deckId] = false; })
+          .catch(err => {
+            playPendingRef.current[deckId] = false;
+            if (err.name !== 'AbortError') {
+              console.warn(`Synchronous play attempt failed on deck ${deckId}:`, err.message);
+              
+              // Fallback to canplay event listener if synchronous play failed
+              const playWhenReady = () => {
+                if (audio.readyState >= 2) {
+                  const freshDeck = useAudioStore.getState().decks[deckId];
+                  if (freshDeck?.syncEnabled) {
+                    alignSyncPlayback(deckId);
+                  }
+                  playPendingRef.current[deckId] = true;
+                  audio.play()
+                    .then(() => { playPendingRef.current[deckId] = false; })
+                    .catch(err2 => {
+                      playPendingRef.current[deckId] = false;
+                      if (err2.name !== 'AbortError') {
+                        console.warn(`Asynchronous fallback play failed on deck ${deckId}:`, err2.message);
+                        setDeck(deckId, { isPlaying: false });
+                      }
+                    });
+                  audio.removeEventListener('canplay', playWhenReady);
                 }
-              });
-            audio.removeEventListener('canplay', playWhenReady);
-          }
-        };
-        audio.addEventListener('canplay', playWhenReady);
-        // Fallback cleanup if it takes too long
-        setTimeout(() => {
-          audio.removeEventListener('canplay', playWhenReady);
-        }, 10000);
+              };
+              audio.addEventListener('canplay', playWhenReady);
+              setTimeout(() => {
+                audio.removeEventListener('canplay', playWhenReady);
+              }, 10000);
+            }
+          });
       }
     } else {
       audio.pause();
@@ -647,22 +674,36 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
                   }
                 });
             } else {
-              // Wait for audio to be ready
-              const playWhenReady = () => {
-                const freshDeck = useAudioStore.getState().decks[deckId];
-                if (freshDeck?.syncEnabled) {
-                  alignSyncPlayback(deckId);
-                }
-                playPendingRef.current[deckId] = true;
-                audio.play()
-                  .then(() => { playPendingRef.current[deckId] = false; })
-                  .catch(err => {
-                    playPendingRef.current[deckId] = false;
-                    if (err.name !== 'AbortError') setDeck(deckId, { isPlaying: false });
-                  });
-                audio.removeEventListener('canplay', playWhenReady);
-              };
-              audio.addEventListener('canplay', playWhenReady, { once: true });
+              // Attempt synchronous play first to lock in user gesture
+              playPendingRef.current[deckId] = true;
+              if (deck.syncEnabled) {
+                alignSyncPlayback(deckId);
+              }
+              audio.play()
+                .then(() => { playPendingRef.current[deckId] = false; })
+                .catch(err => {
+                  playPendingRef.current[deckId] = false;
+                  if (err.name !== 'AbortError') {
+                    console.warn(`Synchronous play attempt failed on deck ${deckId}:`, err.message);
+                    
+                    // Wait for audio to be ready
+                    const playWhenReady = () => {
+                      const freshDeck = useAudioStore.getState().decks[deckId];
+                      if (freshDeck?.syncEnabled) {
+                        alignSyncPlayback(deckId);
+                      }
+                      playPendingRef.current[deckId] = true;
+                      audio.play()
+                        .then(() => { playPendingRef.current[deckId] = false; })
+                        .catch(err2 => {
+                          playPendingRef.current[deckId] = false;
+                          if (err2.name !== 'AbortError') setDeck(deckId, { isPlaying: false });
+                        });
+                      audio.removeEventListener('canplay', playWhenReady);
+                    };
+                    audio.addEventListener('canplay', playWhenReady, { once: true });
+                  }
+                });
             }
           } else {
             audio.pause();
@@ -689,43 +730,57 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
           audio.load();
         }
         
-        // Wait for audio to be ready before playing (fixes "no supported sources" error)
-        const playWhenReady = () => {
-          if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or better
-            const freshDeck = useAudioStore.getState().decks[deckId];
-            if (freshDeck?.syncEnabled) {
-              alignSyncPlayback(deckId);
-            }
-            playPendingRef.current[deckId] = true;
-            audio.play()
-              .then(() => { playPendingRef.current[deckId] = false; })
-              .catch(err => {
-                playPendingRef.current[deckId] = false;
-                if (err.name !== 'AbortError') {
-                  console.warn(`Play failed on deck ${deckId}:`, err.message);
-                  setDeck(deckId, { isPlaying: false });
-                }
-              });
-            audio.removeEventListener('canplay', playWhenReady);
-            audio.removeEventListener('error', handlePlayError);
-          }
-        };
-        
-        const handlePlayError = () => {
-          playPendingRef.current[deckId] = false;
-          console.error(`Audio load failed on deck ${deckId}:`, audio.error?.message);
-          setDeck(deckId, { isPlaying: false, isReady: false });
-          audio.removeEventListener('canplay', playWhenReady);
-        };
-        
-        // If already ready, play immediately
-        if (audio.readyState >= 2) {
-          playWhenReady();
-        } else {
-          // Wait for canplay event
-          audio.addEventListener('canplay', playWhenReady, { once: true });
-          audio.addEventListener('error', handlePlayError, { once: true });
+        // Attempt synchronous play first
+        playPendingRef.current[deckId] = true;
+        if (deck.syncEnabled) {
+          alignSyncPlayback(deckId);
         }
+        audio.play()
+          .then(() => { playPendingRef.current[deckId] = false; })
+          .catch(err => {
+            playPendingRef.current[deckId] = false;
+            if (err.name !== 'AbortError') {
+              console.warn(`Synchronous play attempt on switch failed on deck ${deckId}:`, err.message);
+              
+              // Wait for audio to be ready before playing (fixes "no supported sources" error)
+              const playWhenReady = () => {
+                if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or better
+                  const freshDeck = useAudioStore.getState().decks[deckId];
+                  if (freshDeck?.syncEnabled) {
+                    alignSyncPlayback(deckId);
+                  }
+                  playPendingRef.current[deckId] = true;
+                  audio.play()
+                    .then(() => { playPendingRef.current[deckId] = false; })
+                    .catch(err2 => {
+                      playPendingRef.current[deckId] = false;
+                      if (err2.name !== 'AbortError') {
+                        console.warn(`Play failed on deck ${deckId}:`, err2.message);
+                        setDeck(deckId, { isPlaying: false });
+                      }
+                    });
+                  audio.removeEventListener('canplay', playWhenReady);
+                  audio.removeEventListener('error', handlePlayError);
+                }
+              };
+              
+              const handlePlayError = () => {
+                playPendingRef.current[deckId] = false;
+                console.error(`Audio load failed on deck ${deckId}:`, audio.error?.message);
+                setDeck(deckId, { isPlaying: false, isReady: false });
+                audio.removeEventListener('canplay', playWhenReady);
+              };
+              
+              // If already ready, play immediately
+              if (audio.readyState >= 2) {
+                playWhenReady();
+              } else {
+                // Wait for canplay event
+                audio.addEventListener('canplay', playWhenReady, { once: true });
+                audio.addEventListener('error', handlePlayError, { once: true });
+              }
+            }
+          });
       }
       setDeck(deckId, {
         id: track.id, title: track.title, url: track.url, link: track.link,

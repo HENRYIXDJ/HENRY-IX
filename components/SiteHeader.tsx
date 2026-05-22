@@ -46,9 +46,44 @@ export default function SiteHeader() {
 
   return (
     <header className="fixed top-0 left-0 w-full h-16 z-50 bg-black border-b border-zinc-900 flex items-center justify-between px-6">
-      {/* Left: Section Title (Hidden on mobile to prevent overlaps) */}
-      <div className="font-mono text-xs tracking-[0.2em] font-semibold uppercase text-zinc-400 w-1/4 hidden md:flex justify-start">
-        {title}
+      {/* Left: Section Title & Social Links (Hidden on mobile to prevent overlaps) */}
+      <div className="font-mono text-[10px] md:text-xs tracking-[0.2em] font-semibold uppercase text-zinc-400 w-1/4 hidden md:flex items-center gap-3 justify-start select-none">
+        {title && <span>{title}</span>}
+        {title && <span className="text-zinc-800 font-light">|</span>}
+        <div className="flex items-center gap-2.5">
+          <a
+            href="https://soundcloud.com/henryixdj"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-500 hover:text-primary transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer text-[9px] tracking-[0.2em]"
+            onMouseEnter={() => playTick()}
+            onClick={() => playClick(800, 'sine', 0.03)}
+          >
+            SC
+          </a>
+          <span className="text-zinc-800 font-light text-[8px]">/</span>
+          <a
+            href="https://www.instagram.com/henryixdj/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-500 hover:text-primary transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer text-[9px] tracking-[0.2em]"
+            onMouseEnter={() => playTick()}
+            onClick={() => playClick(800, 'sine', 0.03)}
+          >
+            IG
+          </a>
+          <span className="text-zinc-800 font-light text-[8px]">/</span>
+          <a
+            href="https://www.youtube.com/@HenryIXDJ"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-500 hover:text-primary transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer text-[9px] tracking-[0.2em]"
+            onMouseEnter={() => playTick()}
+            onClick={() => playClick(800, 'sine', 0.03)}
+          >
+            YT
+          </a>
+        </div>
       </div>
 
       {/* Center/Left: Logo */}
@@ -134,6 +169,41 @@ export default function SiteHeader() {
                     )}
                   </Link>
                 ))}
+                {/* Mobile Social Links */}
+                <div className="border-t border-zinc-900 mt-1 py-2 px-4 flex items-center justify-between text-[8px] tracking-[0.2em]">
+                  <a
+                    href="https://soundcloud.com/henryixdj"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 hover:text-primary transition-all duration-300"
+                    onMouseEnter={() => playTick()}
+                    onClick={() => playClick(800, 'sine', 0.03)}
+                  >
+                    SC
+                  </a>
+                  <span className="text-zinc-800 font-light">/</span>
+                  <a
+                    href="https://www.instagram.com/henryixdj/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 hover:text-primary transition-all duration-300"
+                    onMouseEnter={() => playTick()}
+                    onClick={() => playClick(800, 'sine', 0.03)}
+                  >
+                    IG
+                  </a>
+                  <span className="text-zinc-800 font-light">/</span>
+                  <a
+                    href="https://www.youtube.com/@HenryIXDJ"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 hover:text-primary transition-all duration-300"
+                    onMouseEnter={() => playTick()}
+                    onClick={() => playClick(800, 'sine', 0.03)}
+                  >
+                    YT
+                  </a>
+                </div>
               </div>
             </motion.div>
           )}

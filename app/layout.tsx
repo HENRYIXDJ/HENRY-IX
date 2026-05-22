@@ -18,8 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Henry IX - DJ Portal',
-  description: 'Interactive DJ portfolio for Henry IX',
+  title: 'Henry IX - CDJ Portfolio',
+  description: 'Interactive CDJ Portfolio for Henry IX',
 };
 
 import { AudioProvider } from '@/components/AudioProvider';

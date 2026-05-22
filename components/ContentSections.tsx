@@ -46,10 +46,11 @@ export function Schedule({ isDepth }: { isDepth: boolean }) {
         />
 
         <motion.h3 
-          initial={{ letterSpacing: "0.2em", opacity: 0.8 }}
-          whileInView={{ letterSpacing: "0.4em", opacity: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="font-mono text-xl md:text-2xl font-bold tracking-[0.4em] uppercase text-zinc-100 mb-3 text-center pr-[-0.4em]"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
+          className="glitch font-sans text-[clamp(2.2rem,10vw,10vw)] font-bold tracking-wider leading-none text-center select-none text-primary mb-3 w-full uppercase"
+          data-text="COMING SOON"
         >
           COMING SOON
         </motion.h3>

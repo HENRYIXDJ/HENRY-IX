@@ -24,7 +24,7 @@ const HeroNode = React.memo(function HeroNode({
   const smoothScrollY = useSpring(scrollY, { stiffness: 100, damping: 20, mass: 0.2 });
   
   // Hardware-accelerated parallax layers
-  const yText = useTransform(smoothScrollY, [0, 1000], [0, 350]);
+  const yText = useTransform(smoothScrollY, [0, 1000], [0, -350]);
   const scaleText = useTransform(smoothScrollY, [0, 800], [1, 0.82]);
   const opacityText = useTransform(smoothScrollY, [0, 600], [1, 0]);
   
@@ -257,7 +257,7 @@ export default function LandingPage() {
           className="flex flex-col items-center gap-6 md:gap-10 w-full px-6 max-w-4xl mx-auto z-10 relative"
         >
           {[
-            { label: 'MIXES', href: '/mixes', desc: 'Enter the CDJ Portal' },
+            { label: 'MIXES', href: '/mixes', desc: 'Enter the CDJ Portfolio' },
             { label: 'GALLERY', href: '/gallery', desc: 'Visual Archives' },
             { label: 'EVENTS', href: '/events', desc: 'Upcoming Shows' },
             { label: 'CONTACT', href: '/contact', desc: 'Bookings & Info' },

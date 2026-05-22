@@ -665,6 +665,7 @@ function MixArchive({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [embedSCPlayerId, setEmbedSCPlayerId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'knight club' | 'royal court' | 'corner new cross'>('all');
 
   // --- Slip Mode and Loop Roll states ---
   const [slipMode, setSlipMode] = useState<Record<number, boolean>>({
@@ -2110,11 +2111,41 @@ function MixArchive({
   const [searchQuery, setSearchQuery] = useState('');
 
   const renderTracklist = () => {
+    const filteredMixes = mixGroups
+      .filter(g => activeTab === 'all' || g.title.toLowerCase() === activeTab)
+      .flatMap(g => g.mixes);
+
     return (
       <div className="w-full h-full p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6">
         <h2 className="text-2xl md:text-4xl font-sans font-bold text-primary tracking-widest uppercase glitch" data-text="01 / MIX ARCHIVE">01 / MIX ARCHIVE</h2>
+        
+        {/* Horizontal Category Tabs */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-zinc-900 pb-4 font-mono select-none">
+          {(['all', 'knight club', 'royal court', 'corner new cross'] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  playClick(900, 'sine', 0.02);
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-md text-[9px] md:text-[10px] tracking-widest font-black uppercase border transition-all cursor-pointer active:scale-95 flex items-center gap-2",
+                  isActive
+                    ? "bg-primary border-primary text-black shadow-[0_0_10px_rgba(216,22,63,0.4)]"
+                    : "bg-zinc-950 border-zinc-900 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                )}
+              >
+                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isActive ? "bg-black animate-pulse" : "bg-zinc-600")} />
+                {tab}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {mixGroups.flatMap(g => g.mixes).map(track => {
+          {filteredMixes.map(track => {
             const isPlaying = activeVisualizer.isPlaying && (
               decks[leftActiveDeck]?.title === track.title || 
               decks[rightActiveDeck]?.title === track.title
@@ -2208,8 +2239,8 @@ function MixArchive({
         <div className="w-full flex justify-between items-center z-30 font-mono select-none px-3 py-2 shrink-0 border-b border-zinc-900 bg-black/60 backdrop-blur rounded-lg mb-1">
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#D8163F]" />
-            <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs glitch" data-text="HENRY IX // CDJ PORTAL">
-              HENRY IX // CDJ PORTAL
+            <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] md:text-xs glitch" data-text="HENRY IX // CDJ PORTFOLIO">
+              HENRY IX // CDJ PORTFOLIO
             </span>
           </div>
           <button
