@@ -50,12 +50,9 @@ ${details}
       console.error("Resend API error detail:", data.error);
       const isInvalidKey = data.error.message.toLowerCase().includes('api key') || data.error.message.toLowerCase().includes('unauthorized');
       
-      let troubleshootingHint = "Please check your Resend dashboard, ensure your API key is active, and confirm it starts with 're_'.";
-      if (isInvalidKey) {
-        troubleshootingHint = "Your RESEND_API_KEY environment variable is invalid or inactive. If this is deployed on Vercel, make sure you have added RESEND_API_KEY to your Vercel Project Environment Variables under settings, as .env.local is ignored in production.";
-      } else {
-        troubleshootingHint = "This domain may not be verified in Resend. If you are using Resend's free tier, you can only send emails to the email address you signed up with. To send to contact@henryix.com, you must verify the 'henryix.com' domain in your Resend Dashboard, or change the 'to' address in route.ts to your Resend signup email.";
-      }
+      const troubleshootingHint = isInvalidKey
+        ? "Your RESEND_API_KEY environment variable is invalid or inactive. If this is deployed on Vercel, make sure you have added RESEND_API_KEY to your Vercel Project Environment Variables under settings, as .env.local is ignored in production."
+        : "This domain may not be verified in Resend. If you are using Resend's free tier, you can only send emails to the email address you signed up with. To send to contact@henryix.com, you must verify the 'henryix.com' domain in your Resend Dashboard, or change the 'to' address in route.ts to your Resend signup email.";
 
       return NextResponse.json({
         error: `Resend API Error: ${data.error.message}. Troubleshooting: ${troubleshootingHint}`
