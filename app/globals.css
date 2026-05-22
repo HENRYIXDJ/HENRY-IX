@@ -2,8 +2,8 @@
 
 @theme {
   --color-primary: #D8163F;
-  --font-sans: var(--font-sans, "sans-serif");
-  --font-serif: var(--font-sans, "serif");
+  --font-sans: var(--font-avathe), "sans-serif";
+  --font-serif: var(--font-avathe), "serif";
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

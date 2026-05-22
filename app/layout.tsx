@@ -6,7 +6,7 @@ import { Analytics } from '@vercel/analytics/react';
 
 const avathe = localFont({
   src: './fonts/avathe.otf',
-  variable: '--font-sans',
+  variable: '--font-avathe',
   adjustFontFallback: false,
 });
 
