@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 env:
   # Force all JavaScript-based actions to use Node.js 24 instead of the deprecated Node.js 20
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
