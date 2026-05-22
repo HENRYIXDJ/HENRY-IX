@@ -68,7 +68,7 @@ const generateStaticPeaks = (num = 500): number[] => {
     const progress = i / num;
     let envelope = 0.15;
     let transientFrequency = 8;
-    let transientStrength = 0.4;
+    let transientStrength: number;
     let compressIntensity: number;
 
     const introLen = 0.15;
