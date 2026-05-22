@@ -7,7 +7,12 @@ export async function POST(req: Request) {
     
     // Check if API key is missing or is placeholder/unconfigured
     if (!apiKey || apiKey === 'PLACEHOLDER' || apiKey === 'YOUR_RESEND_API_KEY' || !apiKey.startsWith('re_')) {
-      console.warn("RESEND_API_KEY is not configured or is set to a placeholder:", apiKey);
+      console.warn("RESEND_API_KEY is not configured or is set to a placeholder. Status:", {
+        present: !!apiKey,
+        length: apiKey ? apiKey.length : 0,
+        startsWithRe: apiKey ? apiKey.startsWith('re_') : false,
+        placeholder: apiKey === 'PLACEHOLDER' || apiKey === 'YOUR_RESEND_API_KEY'
+      });
       return NextResponse.json(
         { error: 'Resend API key is unconfigured on the server. Please configure your RESEND_API_KEY.' },
         { status: 400 }
