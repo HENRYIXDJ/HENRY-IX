@@ -1285,7 +1285,7 @@ function MixArchive({
               state.lastAngle = angle;
               
               const now = performance.now();
-              const dt = (now - state.lastTime) / 1000;
+                state.velocity = delta / dt;
               if (dt > 0) {
                 state.velocity = delta;
                 state.lastTime = now;
