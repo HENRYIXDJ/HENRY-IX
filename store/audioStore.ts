@@ -69,7 +69,7 @@ const generateStaticPeaks = (num = 500): number[] => {
     let envelope = 0.15;
     let transientFrequency = 8;
     let transientStrength = 0.4;
-    let compressIntensity = 1.0;
+    let compressIntensity: number;
 
     const introLen = 0.15;
     const breakdownStart = 0.48;
