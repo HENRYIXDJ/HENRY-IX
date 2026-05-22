@@ -381,14 +381,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       } else {
         const audio = audioElementsRef.current[deckId];
         if (audio) {
-          if (!audio.src) {
-            const defaultUrls: Record<number, string> = {
-              1: '/Knight Club Session 1 - Mastered High Quality.wav',
-              2: '/Knight Club Session 2 - Mastered.wav',
-              3: '/Knight Club-Session 3.wav',
-              4: '/Knight Club Session 4 - Remastered.wav',
-            };
-            audio.src = new URL(defaultUrls[deckId], window.location.origin).href;
+          if (!audio.src && deckObj?.url) {
+            audio.src = new URL(deckObj.url, window.location.origin).href;
             audio.load();
           }
           if (targetPlaying) {
@@ -480,14 +474,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const audio = audioElementsRef.current[deckId];
     if (!audio) return;
 
-    if (!audio.src) {
-      const defaultUrls: Record<number, string> = {
-        1: '/Knight Club Session 1 - Mastered High Quality.wav',
-        2: '/Knight Club Session 2 - Mastered.wav',
-        3: '/Knight Club-Session 3.wav',
-        4: '/Knight Club Session 4 - Remastered.wav',
-      };
-      audio.src = new URL(defaultUrls[deckId], window.location.origin).href;
+    if (!audio.src && deck?.url) {
+      audio.src = new URL(deck.url, window.location.origin).href;
       audio.load();
     }
 
@@ -506,12 +494,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const togglePlay = () => {
-    const { decks: d, leftActiveDeck: lad } = useAudioStore.getState();
-    const activeDeck = [1, 2, 3, 4].map(id => d[id]).find(dk => dk.isPlaying) || d[lad] || d[1];
-    const deckId = [1, 2, 3, 4].find(id => d[id].id === activeDeck.id) || 1;
-    togglePlayGlobal(deckId);
-  };
+
 
   // ── playTrack ─────────────────────────────────────────────────────────
   const playTrack = (track: any, targetDeckId?: number) => {
@@ -752,7 +735,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       audioElementsRef, playPendingRef, scratchingRef, widgetRefs,
       // Stable functions
       initAudioDSP, loadLocalFile, seekLocalBuffer,
-      togglePlayGlobal, togglePlay, playTrack, playLockoutBlip, estimateBPM,
+      togglePlayGlobal, playTrack, playLockoutBlip, estimateBPM,
       // Lightweight UI state (rarely changes)
       isMuted, setIsMuted,
       preloaderComplete, setPreloaderComplete,

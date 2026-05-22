@@ -681,80 +681,6 @@ function MixArchive({
   const platterRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // --- Global Deck Controls for hotkeys and platters ---
-  const triggerPlay = (deckId: 1 | 2 | 3 | 4) => {
-    const deck = decks[deckId];
-    const isLocked = deck?.id === 'locked';
-    const isPlaying = deck.isPlaying;
-    if (isLocked) {
-      playLockoutBlip();
-      return;
-    }
-    const ctx = initAudioDSP();
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-    const widget = widgetRefs.current[deckId];
-    playClick(1000, 'sine', 0.03);
-    const targetPlaying = !isPlaying;
-
-    if (deck.scMode && widget) {
-      try {
-        targetPlaying ? widget.play() : widget.pause();
-      } catch (e) {
-        setDecks((prev: any) => ({
-          ...prev,
-          [deckId]: { ...prev[deckId], isPlaying: targetPlaying }
-        }));
-      }
-    } else {
-      const audio = audioElementsRef?.current?.[deckId];
-      if (audio) {
-        if (!audio.src) {
-          const defaultUrls: Record<number, string> = {
-            1: '/Knight Club Session 1 - Mastered High Quality.wav',
-            2: '/Knight Club Session 2 - Mastered.wav',
-            3: '/Knight Club-Session 3.wav',
-            4: '/Knight Club Session 4 - Remastered.wav'
-          };
-          const absoluteUrl = new URL(defaultUrls[deckId], window.location.origin).href;
-          // eslint-disable-next-line react-hooks/immutability
-          audio.src = absoluteUrl;
-          audio.load();
-        }
-        if (targetPlaying) {
-          if (playPendingRef) playPendingRef.current[deckId] = true;
-          audio.play()
-            .then(() => {
-              if (playPendingRef) playPendingRef.current[deckId] = false;
-            })
-            .catch((err) => {
-              if (playPendingRef) playPendingRef.current[deckId] = false;
-              if (err.name !== 'AbortError') {
-                console.error("Direct platter play failed:", err);
-                setDecks((prev: any) => ({
-                  ...prev,
-                  [deckId]: { ...prev[deckId], isPlaying: false }
-                }));
-              }
-            });
-        } else {
-          audio.pause();
-        }
-      }
-      setDecks((prev: any) => ({
-        ...prev,
-        [deckId]: { ...prev[deckId], isPlaying: targetPlaying }
-      }));
-    }
-
-    if (targetPlaying) {
-      if (deckId === 1 || deckId === 2) {
-        setLeftActiveDeck(deckId as 1 | 2);
-      } else {
-        setRightActiveDeck(deckId as 3 | 4);
-      }
-    }
-  };
 
   const triggerHotCue = (deckId: number, percentage: number) => {
     const deck = decks[deckId];
@@ -930,7 +856,7 @@ function MixArchive({
       // Left Deck controls
       if (e.code === 'Space' || e.key === 'Enter') {
         e.preventDefault();
-        triggerPlay(leftDeckId);
+        togglePlayGlobal(leftDeckId);
       } else if (e.key === 'c' || e.key === 'C') {
         e.preventDefault();
         triggerHotCue(leftDeckId, 0.0);
@@ -951,7 +877,7 @@ function MixArchive({
       // Right Deck controls
       else if (e.key === 'p' || e.key === 'P') {
         e.preventDefault();
-        triggerPlay(rightDeckId);
+        togglePlayGlobal(rightDeckId);
       } else if (e.key === 'l' || e.key === 'L') {
         e.preventDefault();
         triggerHotCue(rightDeckId, 0.0);
@@ -1610,7 +1536,7 @@ function MixArchive({
                 </button>
 
                 <button
-                  onClick={() => triggerPlay(deckId)}
+                  onClick={() => togglePlayGlobal(deckId)}
                   className="p-2.5 px-3.5 border border-zinc-900 hover:border-zinc-700 bg-zinc-950 rounded-xl transition-all duration-300 flex items-center justify-center shrink-0 cursor-pointer active:scale-95 shadow-md"
                   style={{
                     color: isPlaying ? themeColor : 'rgb(161, 161, 170)',
@@ -1733,7 +1659,7 @@ function MixArchive({
         {/* Play mechanical button */}
         <div className="w-full flex justify-center items-center shrink-0 z-10 select-none mt-1">
           <motion.button
-            onClick={() => triggerPlay(deckId)}
+            onClick={() => togglePlayGlobal(deckId)}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.98 }}
             className={cn(
