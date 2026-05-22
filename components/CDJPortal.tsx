@@ -1969,8 +1969,6 @@ function MixArchive({
         </div>
       </div>
     );
-  };
-
   const [searchQuery, setSearchQuery] = useState('');
 
   const renderTracklist = () => {
