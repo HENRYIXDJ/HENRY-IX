@@ -650,6 +650,9 @@ function MixArchive({
   scratchingRef?: React.MutableRefObject<Record<number, boolean>>;
   alignSyncPlayback?: (deckId: number) => void;
 }) {
+  const decksRef = useRef(decks);
+  useEffect(() => { decksRef.current = decks; }, [decks]);
+
   const archiveRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -739,6 +742,36 @@ function MixArchive({
     }
   };
 
+  // --- Manual Looping ---
+  const handleLoopIn = (deckId: number) => {
+    const audio = audioElementsRef?.current?.[deckId];
+    if (!audio) return;
+    useAudioStore.getState().setDeck(deckId, { loopIn: audio.currentTime, isLoopActive: false, loopOut: null });
+    playClick(1100, 'sine', 0.02);
+  };
+  const handleLoopOut = (deckId: number) => {
+    const audio = audioElementsRef?.current?.[deckId];
+    const deck = decks[deckId];
+    if (!audio || !deck) return;
+    if (deck.loopIn !== undefined && deck.loopIn !== null && audio.currentTime > deck.loopIn) {
+      useAudioStore.getState().setDeck(deckId, { loopOut: audio.currentTime, isLoopActive: true });
+      playClick(1000, 'sine', 0.02);
+    }
+  };
+  const handleReloop = (deckId: number) => {
+    const audio = audioElementsRef?.current?.[deckId];
+    const deck = decks[deckId];
+    if (deck?.loopIn !== undefined && deck?.loopIn !== null && audio) {
+      audio.currentTime = deck.loopIn;
+      useAudioStore.getState().setDeck(deckId, { isLoopActive: true });
+      playClick(900, 'sine', 0.02);
+    }
+  };
+  const handleExitLoop = (deckId: number) => {
+    useAudioStore.getState().setDeck(deckId, { isLoopActive: false });
+    playClick(800, 'sine', 0.02);
+  };
+
   // --- Beat Loop Roll Helpers ---
   const startLoopRoll = (deckId: number, division: number) => {
     const audio = audioElementsRef?.current?.[deckId];
@@ -785,7 +818,7 @@ function MixArchive({
 
       [1, 2, 3, 4].forEach((deckId) => {
         const state = scratchStateRef.current[deckId];
-        const deck = decks[deckId];
+        const deck = decksRef.current[deckId];
         const el = platterRefs.current[deckId];
         if (!state || !deck) return;
 
@@ -824,7 +857,7 @@ function MixArchive({
         }
 
         // 2. Loop Roll Sweeping
-        const roll = activeRoll[deckId];
+        const roll = activeRollRef.current[deckId];
         if (roll && audio && !audio.paused) {
           const pitchModifier = 1 + (deck.pitch || 0) / 100;
           roll.virtualTime += dt * pitchModifier;
@@ -837,6 +870,13 @@ function MixArchive({
             audio.currentTime = roll.startTime;
           }
         }
+        
+        // 3. Manual Loop Sweeping
+        if (deck.isLoopActive && deck.loopIn !== null && deck.loopOut !== null && audio && !audio.paused) {
+          if (audio.currentTime >= deck.loopOut) {
+            audio.currentTime = deck.loopIn;
+          }
+        }
       });
 
       frameId = requestAnimationFrame(updateTick);
@@ -844,7 +884,7 @@ function MixArchive({
 
     frameId = requestAnimationFrame(updateTick);
     return () => cancelAnimationFrame(frameId);
-  }, [decks, activeRoll, slipMode, audioElementsRef]);
+  }, [audioElementsRef]);
 
   // --- Keyboard DJ Hotkeys useEffect ---
   useEffect(() => {
@@ -914,16 +954,33 @@ function MixArchive({
       // SYNC triggers
       else if (e.key === 's' || e.key === 'S') {
         e.preventDefault();
-        triggerSync(leftDeckId, rightDeckId);
+        // Read directly from decksRef to avoid stale closures
+        const d1 = decksRef.current[leftDeckId];
+        const d2 = decksRef.current[rightDeckId];
+        if (d1 && d2 && d1.id !== 'locked') {
+          const targetBpm = d2.bpm * (1 + (d2.pitch || 0) / 100);
+          const requiredPitch = ((targetBpm / d1.bpm) - 1) * 100;
+          const clampedPitch = Math.max(-8, Math.min(8, requiredPitch));
+          useAudioStore.getState().setDeck(leftDeckId, { pitch: clampedPitch });
+          playClick(800, 'sine', 0.02);
+        }
       } else if (e.key === 'd' || e.key === 'D') {
         e.preventDefault();
-        triggerSync(rightDeckId, leftDeckId);
+        const d1 = decksRef.current[rightDeckId];
+        const d2 = decksRef.current[leftDeckId];
+        if (d1 && d2 && d1.id !== 'locked') {
+          const targetBpm = d2.bpm * (1 + (d2.pitch || 0) / 100);
+          const requiredPitch = ((targetBpm / d1.bpm) - 1) * 100;
+          const clampedPitch = Math.max(-8, Math.min(8, requiredPitch));
+          useAudioStore.getState().setDeck(rightDeckId, { pitch: clampedPitch });
+          playClick(800, 'sine', 0.02);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [leftActiveDeck, rightActiveDeck, crossfader, decks]);
+  }, [leftActiveDeck, rightActiveDeck, crossfader, setCrossfader, togglePlayGlobal]);
 
   // Average the parameters of all playing decks for the central mixer display
   const playingDecks = Object.values(decks).filter((d: any) => d.isPlaying);
@@ -1617,6 +1674,49 @@ function MixArchive({
                 {pad.label}
               </motion.button>
             ))}
+          </div>
+        </div>
+
+        {/* Manual Loop Controls */}
+        <div className="w-full flex flex-col gap-0.5 shrink-0 z-10 select-none my-1">
+          <span className="text-[6px] text-zinc-600 font-mono tracking-widest font-black uppercase mb-0.5">MANUAL LOOP</span>
+          <div className="w-full grid grid-cols-4 gap-1">
+            <button
+              onClick={() => { if (!isLocked) handleLoopIn(deckId); }}
+              className={cn("py-1 rounded text-[8.5px] font-mono font-black tracking-wider border transition-colors cursor-pointer select-none text-center shadow active:scale-95",
+                isLocked ? "bg-zinc-900/50 border-zinc-900/40 text-zinc-700 cursor-not-allowed" :
+                (deck.loopIn !== null && deck.loopIn !== undefined) ? "bg-amber-500 border-amber-500 text-black shadow-[0_0_8px_rgba(245,158,11,0.4)]" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+              )}
+            >
+              IN
+            </button>
+            <button
+              onClick={() => { if (!isLocked) handleLoopOut(deckId); }}
+              className={cn("py-1 rounded text-[8.5px] font-mono font-black tracking-wider border transition-colors cursor-pointer select-none text-center shadow active:scale-95",
+                isLocked ? "bg-zinc-900/50 border-zinc-900/40 text-zinc-700 cursor-not-allowed" :
+                deck.isLoopActive ? "bg-amber-500 border-amber-500 text-black shadow-[0_0_8px_rgba(245,158,11,0.4)]" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+              )}
+            >
+              OUT
+            </button>
+            <button
+              onClick={() => { if (!isLocked) handleExitLoop(deckId); }}
+              className={cn("py-1 rounded text-[8.5px] font-mono font-black tracking-wider border transition-colors cursor-pointer select-none text-center shadow active:scale-95",
+                isLocked ? "bg-zinc-900/50 border-zinc-900/40 text-zinc-700 cursor-not-allowed" :
+                deck.isLoopActive ? "bg-red-500 border-red-500 text-black shadow-[0_0_8px_rgba(239,68,68,0.4)]" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+              )}
+            >
+              EXIT
+            </button>
+            <button
+              onClick={() => { if (!isLocked) handleReloop(deckId); }}
+              className={cn("py-1 rounded text-[8.5px] font-mono font-black tracking-wider border transition-colors cursor-pointer select-none text-center shadow active:scale-95",
+                isLocked ? "bg-zinc-900/50 border-zinc-900/40 text-zinc-700 cursor-not-allowed" :
+                (deck.loopIn !== null && !deck.isLoopActive) ? "bg-green-500 border-green-500 text-black shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+              )}
+            >
+              RELOOP
+            </button>
           </div>
         </div>
 

@@ -35,6 +35,13 @@ export default function AudioVisualizerBackground({
   const offscreenInitialisedRef = useRef(false);
   const fallbackRef = useRef(false); // true if OffscreenCanvas not supported
 
+  const isPlayingRef = useRef(isPlaying);
+  const isDepthRef = useRef(isDepth);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+    isDepthRef.current = isDepth;
+  }, [isPlaying, isDepth]);
+
   // ── On mount: decide OffscreenCanvas vs. fallback ─────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -81,10 +88,10 @@ export default function AudioVisualizerBackground({
           workerRef.current?.postMessage({
             type: 'frame',
             frequencyData: dataArrayRef.current,
-            isPlaying,
+            isPlaying: isPlayingRef.current,
             mouseX: isFinite(mX) ? mX : window.innerWidth / 2,
             mouseY: isFinite(mY) ? mY : window.innerHeight / 2,
-            isDepth,
+            isDepth: isDepthRef.current,
           });
 
           rafRef.current = requestAnimationFrame(tick);
@@ -136,7 +143,7 @@ export default function AudioVisualizerBackground({
         ctx2d.clearRect(0, 0, width, height);
 
         let bass = 0, mid = 0, high = 0;
-        if (analyser && isPlaying) {
+        if (analyser && isPlayingRef.current) {
           analyser.getByteFrequencyData(dataArray);
           const bassEnd = Math.min(15, bufferLength);
           for (let i = 0; i < bassEnd; i++) bass += dataArray[i] || 0;
@@ -160,14 +167,14 @@ export default function AudioVisualizerBackground({
         if (!isFinite(mX)) mX = width / 2;
         if (!isFinite(mY)) mY = height / 2;
 
-        if (isPlaying) {
+        if (isPlayingRef.current) {
           ctx2d.save();
           ctx2d.globalCompositeOperation = 'screen';
 
           let outerRadius = 80 + highSmooth * 1.5;
           if (!isFinite(outerRadius) || outerRadius <= 0) outerRadius = 80;
           const outerGlow = ctx2d.createRadialGradient(mX, mY, 0, mX, mY, outerRadius);
-          outerGlow.addColorStop(0, isDepth ? 'rgba(216, 22, 63, 0.06)' : 'rgba(216, 22, 63, 0.03)');
+          outerGlow.addColorStop(0, isDepthRef.current ? 'rgba(216, 22, 63, 0.06)' : 'rgba(216, 22, 63, 0.03)');
           outerGlow.addColorStop(0.5, 'rgba(6, 182, 212, 0.02)');
           outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
           ctx2d.fillStyle = outerGlow;
@@ -178,7 +185,7 @@ export default function AudioVisualizerBackground({
           let innerRadius = 30 + bassSmooth * 2.2;
           if (!isFinite(innerRadius) || innerRadius <= 0) innerRadius = 30;
           const innerGlow = ctx2d.createRadialGradient(mX, mY, 0, mX, mY, innerRadius);
-          innerGlow.addColorStop(0, isDepth ? 'rgba(216, 22, 63, 0.22)' : 'rgba(216, 22, 63, 0.12)');
+          innerGlow.addColorStop(0, isDepthRef.current ? 'rgba(216, 22, 63, 0.22)' : 'rgba(216, 22, 63, 0.12)');
           innerGlow.addColorStop(0.4, 'rgba(216, 22, 63, 0.04)');
           innerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
           ctx2d.fillStyle = innerGlow;
@@ -190,14 +197,14 @@ export default function AudioVisualizerBackground({
 
         const barCount = 48;
         const barWidth = width / barCount;
-        const themeColor = isDepth ? 'rgba(216, 22, 63,' : 'rgba(24, 24, 27,';
+        const themeColor = isDepthRef.current ? 'rgba(216, 22, 63,' : 'rgba(24, 24, 27,';
         ctx2d.save();
         ctx2d.globalAlpha = 0.07;
         for (let i = 0; i < barCount; i++) {
           const sampleIdx = Math.max(0, Math.min(bufferLength - 1, Math.floor(Math.pow(i / barCount, 1.8) * Math.max(1, bufferLength - 10))));
-          const rawVal = isPlaying && analyser ? (dataArray[sampleIdx] || 0) : 0;
+          const rawVal = isPlayingRef.current && analyser ? (dataArray[sampleIdx] || 0) : 0;
           let barHeight = (rawVal / 255) * (height * 0.22);
-          barHeight = isPlaying ? Math.max(4, barHeight + Math.sin(i * 0.15 + performance.now() * 0.005) * 2) : 4;
+          barHeight = isPlayingRef.current ? Math.max(4, barHeight + Math.sin(i * 0.15 + performance.now() * 0.005) * 2) : 4;
           const grad = ctx2d.createLinearGradient(i * barWidth, height, i * barWidth, height - barHeight);
           grad.addColorStop(0, `${themeColor} 0.8)`);
           grad.addColorStop(0.5, `${themeColor} 0.3)`);
@@ -217,6 +224,7 @@ export default function AudioVisualizerBackground({
         cancelAnimationFrame(rafRef.current);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analyser]);
 
   // ── Sync isPlaying / mouse / isDepth changes to OffscreenCanvas worker ─

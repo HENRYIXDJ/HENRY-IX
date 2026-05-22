@@ -32,6 +32,9 @@ export interface DeckState {
   crossfaderAssign: 'L' | 'R' | 'THRU';
   waveformPeaks: number[];
   cuePoints?: number[];
+  loopIn?: number | null;
+  loopOut?: number | null;
+  isLoopActive?: boolean;
 }
 
 export interface AudioStoreState {
@@ -148,6 +151,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     bpm: 145, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
     filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'L',
+    loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-1'] ?? generateStaticPeaks(500),
     cuePoints: [0, 1127, 2112, 2772],
   },
@@ -158,6 +162,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     bpm: 152, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
     filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'L',
+    loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-2'] ?? generateStaticPeaks(500),
   },
   3: {
@@ -167,6 +172,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     bpm: 150, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
     filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'R',
+    loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-3'] ?? generateStaticPeaks(500),
   },
   4: {
@@ -176,6 +182,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     bpm: 155, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
     filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'R',
+    loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-4'] ?? generateStaticPeaks(500),
   },
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, startTransition } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageShell from '@/components/PageShell';
 
@@ -162,7 +163,7 @@ export default function GalleryPage() {
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] pointer-events-none z-10 opacity-40 group-hover:opacity-20 transition-opacity duration-500" />
                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
 
-                {/* Main Image */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.src}
                   alt={item.title}
@@ -257,6 +258,7 @@ export default function GalleryPage() {
                   transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
                   className="relative max-h-[35vh] md:max-h-[70vh] flex items-center justify-center rounded-xl overflow-hidden border border-zinc-900/60 shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-zinc-950"
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={GALLERY_IMAGES[activeIdx].src}
                     alt={GALLERY_IMAGES[activeIdx].title}
