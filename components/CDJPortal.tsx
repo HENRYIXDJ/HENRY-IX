@@ -409,24 +409,25 @@ function DualDeckWaveforms({
             const drawX = x - pixelShift;
             const barTime = progress + (drawX - centerX) / pixelsPerSecond;
             if (barTime >= 0 && barTime <= (deck.duration || 300)) {
-              let hVal = 0.02;
-              if (deck.waveformPeaks && deck.waveformPeaks.length > 0) {
-                const exactIdx = barTime * PEAK_DENSITY;
-                const idxBase = Math.floor(exactIdx);
-                const fract = exactIdx - idxBase;
-                
-                const p0 = deck.waveformPeaks[idxBase] !== undefined 
-                  ? deck.waveformPeaks[idxBase] 
-                  : 0.02;
-                const p1 = deck.waveformPeaks[idxBase + 1] !== undefined 
-                  ? deck.waveformPeaks[idxBase + 1] 
-                  : p0;
-                  
-                hVal = p0 + (p1 - p0) * fract;
-              } else {
-                const idx = Math.floor(barTime * 14);
-                hVal = getWaveformHeight(deck.id, idx, deck.duration || 300);
-              }
+              const hVal = (deck.waveformPeaks && deck.waveformPeaks.length > 0)
+                ? (() => {
+                    const exactIdx = barTime * PEAK_DENSITY;
+                    const idxBase = Math.floor(exactIdx);
+                    const fract = exactIdx - idxBase;
+                    
+                    const p0 = deck.waveformPeaks[idxBase] !== undefined 
+                      ? deck.waveformPeaks[idxBase] 
+                      : 0.02;
+                    const p1 = deck.waveformPeaks[idxBase + 1] !== undefined 
+                      ? deck.waveformPeaks[idxBase + 1] 
+                      : p0;
+                    
+                    return p0 + (p1 - p0) * fract;
+                  })()
+                : (() => {
+                    const idx = Math.floor(barTime * 14);
+                    return getWaveformHeight(deck.id, idx, deck.duration || 300);
+                  })();
               
               const eqLow = deck.eqLow ?? 50;
               const eqMid = deck.eqMid ?? 50;
