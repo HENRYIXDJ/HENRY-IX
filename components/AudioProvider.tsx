@@ -18,14 +18,14 @@ const formatTime = (secs: number) => {
 };
 
 const getSessionImage = (title: string) => {
-  if (!title) return '/knight-club-session-1.jpg';
-  if (title.includes('Session 1')) return '/knight-club-session-1.jpg';
-  if (title.includes('Session 2')) return '/knight-club-session-2.jpg';
-  if (title.includes('Session 3')) return '/knight-club-session-3.jpg';
-  if (title.includes('Session 4')) return '/knight-club-session-4.jpg';
+  if (!title) return '/Knight Club Artwork/Session 1.jpg';
+  if (title.includes('Session 1')) return '/Knight Club Artwork/Session 1.jpg';
+  if (title.includes('Session 2')) return '/Knight Club Artwork/Session 2.jpg';
+  if (title.includes('Session 3')) return '/Knight Club Artwork/Session 3.jpg';
+  if (title.includes('Session 4')) return '/Knight Club Artwork/Session 4.jpg';
   if (title.includes('Night 1')) return '/corner-new-cross-night-1.jpg';
   if (title.includes('Night 2')) return '/corner-new-cross-night-2.jpg';
-  return '/knight-club-session-1.jpg';
+  return '/Knight Club Artwork/Session 1.jpg';
 };
 
 // ---------------------------------------------------------------------------

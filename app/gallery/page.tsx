@@ -64,6 +64,42 @@ const GALLERY_IMAGES: GalleryItem[] = [
     details: 'The continuous rhythm of the dancefloor. A sea of hands responding to a progressive drop.',
     techSpecs: { iso: '2500', aperture: 'f/2.2', shutter: '1/160s', lens: '24mm' },
     gridClass: 'col-span-1 md:col-span-2 aspect-square md:aspect-[2/1]',
+  },
+  {
+    src: '/Knight Club Artwork/Session 1.jpg',
+    title: 'KNIGHT CLUB: SESSION 1',
+    category: 'Knight Club Artwork',
+    meta: '2026.05 - AUDIO ART',
+    details: 'Official session artwork for the first installment of the Knight Club live-recorded studio mixes.',
+    techSpecs: { iso: '100', aperture: 'N/A', shutter: 'N/A', lens: 'DIGITAL' },
+    gridClass: 'col-span-1 aspect-square',
+  },
+  {
+    src: '/Knight Club Artwork/Session 2.jpg',
+    title: 'KNIGHT CLUB: SESSION 2',
+    category: 'Knight Club Artwork',
+    meta: '2026.05 - AUDIO ART',
+    details: 'Official session artwork for Knight Club Session 2, designed to capture the high-pressure energy of industrial techno.',
+    techSpecs: { iso: '100', aperture: 'N/A', shutter: 'N/A', lens: 'DIGITAL' },
+    gridClass: 'col-span-1 aspect-square',
+  },
+  {
+    src: '/Knight Club Artwork/Session 3.jpg',
+    title: 'KNIGHT CLUB: SESSION 3',
+    category: 'Knight Club Artwork',
+    meta: '2026.05 - AUDIO ART',
+    details: 'Official session artwork for Knight Club Session 3, reflecting the peak-time atmospheric rhythms of the underground scene.',
+    techSpecs: { iso: '100', aperture: 'N/A', shutter: 'N/A', lens: 'DIGITAL' },
+    gridClass: 'col-span-1 aspect-square',
+  },
+  {
+    src: '/Knight Club Artwork/Session 4.jpg',
+    title: 'KNIGHT CLUB: SESSION 4',
+    category: 'Knight Club Artwork',
+    meta: '2026.05 - AUDIO ART',
+    details: 'Official session artwork for the final remastered edition of Knight Club Session 4.',
+    techSpecs: { iso: '100', aperture: 'N/A', shutter: 'N/A', lens: 'DIGITAL' },
+    gridClass: 'col-span-1 aspect-square',
   }
 ];
 

@@ -22,11 +22,11 @@ const formatTime = (secs: number) => {
 };
 
 const getSessionImage = (title: string) => {
-  if (!title) return '/knight-club-session-1.jpg';
-  if (title.includes('Knight Club') && title.includes('Session 1')) return '/knight-club-session-1.jpg';
-  if (title.includes('Knight Club') && title.includes('Session 2')) return '/knight-club-session-2.jpg';
-  if (title.includes('Knight Club') && title.includes('Session 3')) return '/knight-club-session-3.jpg';
-  if (title.includes('Knight Club') && title.includes('Session 4')) return '/knight-club-session-4.jpg';
+  if (!title) return '/Knight Club Artwork/Session 1.jpg';
+  if (title.includes('Knight Club') && title.includes('Session 1')) return '/Knight Club Artwork/Session 1.jpg';
+  if (title.includes('Knight Club') && title.includes('Session 2')) return '/Knight Club Artwork/Session 2.jpg';
+  if (title.includes('Knight Club') && title.includes('Session 3')) return '/Knight Club Artwork/Session 3.jpg';
+  if (title.includes('Knight Club') && title.includes('Session 4')) return '/Knight Club Artwork/Session 4.jpg';
   
   if (title.includes('Royal Court') && title.includes('Session 1')) return '/royal-court-session-1.jpg';
   if (title.includes('Royal Court') && title.includes('Session 2')) return '/royal-court-session-2.jpg';
@@ -35,12 +35,12 @@ const getSessionImage = (title: string) => {
   if (title.includes('Corner New Cross') && title.includes('Night 2')) return '/corner-new-cross-night-2.jpg';
 
   // Fallbacks if just matching session
-  if (title.includes('Session 1')) return '/knight-club-session-1.jpg';
-  if (title.includes('Session 2')) return '/knight-club-session-2.jpg';
-  if (title.includes('Session 3')) return '/knight-club-session-3.jpg';
-  if (title.includes('Session 4')) return '/knight-club-session-4.jpg';
+  if (title.includes('Session 1')) return '/Knight Club Artwork/Session 1.jpg';
+  if (title.includes('Session 2')) return '/Knight Club Artwork/Session 2.jpg';
+  if (title.includes('Session 3')) return '/Knight Club Artwork/Session 3.jpg';
+  if (title.includes('Session 4')) return '/Knight Club Artwork/Session 4.jpg';
   
-  return '/knight-club-session-1.jpg';
+  return '/Knight Club Artwork/Session 1.jpg';
 };
 
 
@@ -958,10 +958,10 @@ function MixArchive({
     {
       title: "Knight Club",
       mixes: [
-        { id: 'kc-1', title: 'Knight Club: Session 1', url: '/Knight Club Session 1 - Mastered High Quality.wav', link: 'https://soundcloud.com/henryixdj/knight-club-session-1', bpm: 145, isLocalFile: true },
-        { id: 'kc-2', title: 'Knight Club: Session 2', url: '/Knight Club Session 2 - Mastered.wav', link: 'https://soundcloud.com/henryixdj/knight-club-session-2', bpm: 152, isLocalFile: true },
-        { id: 'kc-3', title: 'Knight Club: Session 3', url: '/Knight Club-Session 3.wav', link: 'https://soundcloud.com/henryixdj/knight-club-session-3', bpm: 150, isLocalFile: true },
-        { id: 'kc-4', title: 'Knight Club: Session 4', url: '/Knight Club Session 4 - Remastered.wav', link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43', bpm: 155, isLocalFile: true }
+        { id: 'kc-1', title: 'Knight Club: Session 1', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%201%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-1', bpm: 145, isLocalFile: true },
+        { id: 'kc-2', title: 'Knight Club: Session 2', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%202%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-2', bpm: 152, isLocalFile: true },
+        { id: 'kc-3', title: 'Knight Club: Session 3', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%203%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-3', bpm: 150, isLocalFile: true },
+        { id: 'kc-4', title: 'Knight Club: Session 4', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%204%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43', bpm: 155, isLocalFile: true }
       ]
     },
     {

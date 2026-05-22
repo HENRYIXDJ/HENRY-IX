@@ -140,7 +140,7 @@ const generateStaticPeaks = (num = 500): number[] => {
 const INITIAL_DECKS: Record<number, DeckState> = {
   1: {
     id: 'kc-1', title: 'Knight Club: Session 1',
-    url: '/tracks/session1.mp3',
+    url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%201%20MP3.mp3',
     link: 'https://soundcloud.com/henryixdj/knight-club-session-1',
     bpm: 145, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
@@ -149,7 +149,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
   },
   2: {
     id: 'kc-2', title: 'Knight Club: Session 2',
-    url: '/tracks/session2.mp3',
+    url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%202%20MP3.mp3',
     link: 'https://soundcloud.com/henryixdj/knight-club-session-2',
     bpm: 152, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
@@ -158,7 +158,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
   },
   3: {
     id: 'kc-3', title: 'Knight Club: Session 3',
-    url: '/tracks/session3.mp3',
+    url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%203%20MP3.mp3',
     link: 'https://soundcloud.com/henryixdj/knight-club-session-3',
     bpm: 150, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
@@ -167,7 +167,7 @@ const INITIAL_DECKS: Record<number, DeckState> = {
   },
   4: {
     id: 'kc-4', title: 'Knight Club: Session 4',
-    url: '/tracks/session4.mp3',
+    url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%204%20MP3.mp3',
     link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43',
     bpm: 155, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,

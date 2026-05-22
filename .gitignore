@@ -17,3 +17,4 @@ public/*.m4a
 # Permitted web-optimized media formats
 # public/tracks/*.mp3
 
+.vercel
