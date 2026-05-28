@@ -180,7 +180,7 @@ const HeroNode = React.memo(function HeroNode({
            window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
          }}
       >
-         <span>Scroll to discover</span>
+         <span>Enter Kingdom</span>
          <motion.div 
            animate={{ scaleY: [1, 1.5, 1] }} 
            transition={{ duration: 2, repeat: Infinity, ease: "anticipate" }}

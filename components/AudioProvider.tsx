@@ -284,6 +284,34 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── getQuantizedDelay (Micro-snapping for Quantized Cues/Play) ─────────────
+  const getQuantizedDelay = (targetDeckId: number): number => {
+    const state = useAudioStore.getState();
+    const deckB = state.decks[targetDeckId];
+    if (!deckB || !deckB.quantizeEnabled) return 0;
+
+    // Find active master deck (excluding target deck, must be playing)
+    const masterDeckId = [1, 2, 3, 4].find(
+      id => id !== targetDeckId && state.decks[id]?.isPlaying && !state.decks[id]?.scMode
+    );
+    if (!masterDeckId) return 0;
+
+    const deckA = state.decks[masterDeckId];
+    const audioA = audioElementsRef.current[masterDeckId];
+    if (!deckA || !audioA) return 0;
+
+    const beatIntervalA = 60 / deckA.bpm;
+    const quantizeInterval = beatIntervalA / 4; // 1/4 beat division snap
+
+    const timeA = audioA.currentTime;
+    const currentOffset = timeA % quantizeInterval;
+    const timeToNext = quantizeInterval - currentOffset;
+
+    // Real time to next beat division based on master's pitch fader rate
+    const realTimeToNext = timeToNext / (1 + (deckA.pitch || 0) / 100);
+    return realTimeToNext * 1000; // in milliseconds
+  };
+
   // ── alignSyncPlayback (Direct BPM & Beat Phase Alignment) ──────────────────
   const alignSyncPlayback = (targetDeckId: number) => {
     const state = useAudioStore.getState();
@@ -309,19 +337,41 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setDeck(targetDeckId, { pitch: clampedPitchB });
     audioB.playbackRate = 1 + clampedPitchB / 100;
 
-    // 2. Phase alignment
-    const beatIntervalA = 60 / deckA.bpm;
-    const beatIntervalB = 60 / deckB.bpm;
-    
-    const phaseA = (audioA.currentTime % beatIntervalA) / beatIntervalA;
-    const durationB = audioB.duration || deckB.duration || 0;
-    
-    let targetTimeB = Math.round(audioB.currentTime / beatIntervalB) * beatIntervalB + phaseA * beatIntervalB;
-    if (targetTimeB < 0) targetTimeB = 0;
-    if (durationB && targetTimeB > durationB) targetTimeB = durationB;
-    
-    audioB.currentTime = targetTimeB;
-    setDeck(targetDeckId, { progress: targetTimeB });
+    // 2. Phase alignment (Only if BEAT sync mode is active)
+    if (deckB.syncMode !== 'BPM') {
+      const beatIntervalA = 60 / deckA.bpm;
+      const beatIntervalB = 60 / deckB.bpm;
+      const offsetA = deckA.firstBeatOffset || 0;
+      const offsetB = deckB.firstBeatOffset || 0;
+      
+      // Calculate progress relative to the first beat offset of Deck A
+      const progressRelA = Math.max(0, audioA.currentTime - offsetA);
+      const phaseA = (progressRelA % beatIntervalA) / beatIntervalA;
+      
+      const durationB = audioB.duration || deckB.duration || 0;
+      
+      // Calculate target time for Deck B relative to its own first beat offset
+      const progressRelB = audioB.currentTime - offsetB;
+      let targetTimeB = offsetB + Math.round(progressRelB / beatIntervalB) * beatIntervalB + phaseA * beatIntervalB;
+      
+      if (targetTimeB < 0) targetTimeB = 0;
+      if (durationB && targetTimeB > durationB) targetTimeB = durationB;
+      
+      audioB.currentTime = targetTimeB;
+      setDeck(targetDeckId, { progress: targetTimeB });
+    }
+  };
+
+  const seekToFirstBeatOneOfBar = (deckId: number, firstBeatOffset: number, bpm: number) => {
+    const audio = audioElementsRef.current[deckId];
+    if (!audio) return;
+    const beatInterval = 60 / bpm;
+    let startBeatTime = firstBeatOffset;
+    while (startBeatTime < 0) {
+      startBeatTime += 4 * beatInterval;
+    }
+    audio.currentTime = startBeatTime;
+    setDeck(deckId, { progress: startBeatTime });
   };
 
   // ── togglePlayGlobal (React-accessible version) ─────────────────────────
@@ -329,86 +379,95 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const state = useAudioStore.getState();
     const deck = state.decks[deckId];
     if (!deck) return;
-    playClick(1000, 'sine', 0.03);
-    const ctx = initAudioDSP();
-    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
 
-    const widget = widgetRefs.current[deckId];
-    if (deck.scMode && widget) {
-      try {
-        deck.isPlaying ? widget.pause() : widget.play();
-      } catch (e) {
-        console.warn(`SoundCloud toggle failed on deck ${deckId}:`, e);
-        setDeck(deckId, { isPlaying: !deck.isPlaying });
+    const executeToggle = () => {
+      playClick(1000, 'sine', 0.03);
+      const ctx = initAudioDSP();
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+
+      const widget = widgetRefs.current[deckId];
+      if (deck.scMode && widget) {
+        try {
+          deck.isPlaying ? widget.pause() : widget.play();
+        } catch (e) {
+          console.warn(`SoundCloud toggle failed on deck ${deckId}:`, e);
+          setDeck(deckId, { isPlaying: !deck.isPlaying });
+        }
+        return;
       }
-      return;
-    }
 
-    const audio = audioElementsRef.current[deckId];
-    if (!audio) return;
+      const audio = audioElementsRef.current[deckId];
+      if (!audio) return;
 
-    if (!audio.src && deck?.url) {
-      audio.src = new URL(deck.url, window.location.origin).href;
-      audio.load();
-    }
-
-    if (audio.paused) {
-      if (audio.readyState >= 2) {
-        if (deck.syncEnabled) {
-          alignSyncPlayback(deckId);
-        }
-        playPendingRef.current[deckId] = true;
-        audio.play()
-          .then(() => { playPendingRef.current[deckId] = false; })
-          .catch(err => {
-            playPendingRef.current[deckId] = false;
-            if (err.name !== 'AbortError') {
-              console.warn(`Play failed on deck ${deckId}:`, err.message);
-              setDeck(deckId, { isPlaying: false });
-            }
-          });
-      } else {
-        // Attempt synchronous play first to lock in user gesture
-        playPendingRef.current[deckId] = true;
-        if (deck.syncEnabled) {
-          alignSyncPlayback(deckId);
-        }
-        audio.play()
-          .then(() => { playPendingRef.current[deckId] = false; })
-          .catch(err => {
-            playPendingRef.current[deckId] = false;
-            if (err.name !== 'AbortError') {
-              console.warn(`Synchronous play attempt failed on deck ${deckId}:`, err.message);
-              
-              // Fallback to canplay event listener if synchronous play failed
-              const playWhenReady = () => {
-                if (audio.readyState >= 2) {
-                  const freshDeck = useAudioStore.getState().decks[deckId];
-                  if (freshDeck?.syncEnabled) {
-                    alignSyncPlayback(deckId);
+      if (audio.paused) {
+        if (audio.readyState >= 2) {
+          if (deck.syncEnabled) {
+            alignSyncPlayback(deckId);
+          }
+          playPendingRef.current[deckId] = true;
+          audio.play()
+            .then(() => { playPendingRef.current[deckId] = false; })
+            .catch(err => {
+              playPendingRef.current[deckId] = false;
+              if (err.name !== 'AbortError') {
+                console.warn(`Play failed on deck ${deckId}:`, err.message);
+                setDeck(deckId, { isPlaying: false });
+              }
+            });
+        } else {
+          // Attempt synchronous play first to lock in user gesture
+          playPendingRef.current[deckId] = true;
+          if (deck.syncEnabled) {
+            alignSyncPlayback(deckId);
+          }
+          audio.play()
+            .then(() => { playPendingRef.current[deckId] = false; })
+            .catch(err => {
+              playPendingRef.current[deckId] = false;
+              if (err.name !== 'AbortError') {
+                console.warn(`Synchronous play attempt failed on deck ${deckId}:`, err.message);
+                
+                // Fallback to canplay event listener if synchronous play failed
+                const playWhenReady = () => {
+                  if (audio.readyState >= 2) {
+                    const freshDeck = useAudioStore.getState().decks[deckId];
+                    if (freshDeck?.syncEnabled) {
+                      alignSyncPlayback(deckId);
+                    }
+                    playPendingRef.current[deckId] = true;
+                    audio.play()
+                      .then(() => { playPendingRef.current[deckId] = false; })
+                      .catch(err2 => {
+                        playPendingRef.current[deckId] = false;
+                        if (err2.name !== 'AbortError') {
+                          console.warn(`Asynchronous fallback play failed on deck ${deckId}:`, err2.message);
+                          setDeck(deckId, { isPlaying: false });
+                        }
+                      });
+                    audio.removeEventListener('canplay', playWhenReady);
                   }
-                  playPendingRef.current[deckId] = true;
-                  audio.play()
-                    .then(() => { playPendingRef.current[deckId] = false; })
-                    .catch(err2 => {
-                      playPendingRef.current[deckId] = false;
-                      if (err2.name !== 'AbortError') {
-                        console.warn(`Asynchronous fallback play failed on deck ${deckId}:`, err2.message);
-                        setDeck(deckId, { isPlaying: false });
-                      }
-                    });
+                };
+                audio.addEventListener('canplay', playWhenReady);
+                setTimeout(() => {
                   audio.removeEventListener('canplay', playWhenReady);
-                }
-              };
-              audio.addEventListener('canplay', playWhenReady);
-              setTimeout(() => {
-                audio.removeEventListener('canplay', playWhenReady);
-              }, 10000);
-            }
-          });
+                }, 10000);
+              }
+            });
+        }
+      } else {
+        audio.pause();
       }
+    };
+
+    // If starting playback, wait for quantization delay
+    const audio = audioElementsRef.current[deckId];
+    const isStarting = audio ? audio.paused : !deck.isPlaying;
+    const delay = isStarting ? getQuantizedDelay(deckId) : 0;
+
+    if (delay > 10) {
+      setTimeout(executeToggle, delay);
     } else {
-      audio.pause();
+      executeToggle();
     }
   };
 
@@ -586,6 +645,40 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     );
     return unsubscribe;
   }, []);
+
+  // ── Synced Decks Pitch Follower Sync ─────────────────────────────────────
+  useEffect(() => {
+    const unsubscribe = useAudioStore.subscribe(
+      state => [
+        state.decks[1]?.pitch, state.decks[1]?.bpm, state.decks[1]?.isPlaying, state.decks[1]?.syncEnabled,
+        state.decks[2]?.pitch, state.decks[2]?.bpm, state.decks[2]?.isPlaying, state.decks[2]?.syncEnabled,
+        state.decks[3]?.pitch, state.decks[3]?.bpm, state.decks[3]?.isPlaying, state.decks[3]?.syncEnabled,
+        state.decks[4]?.pitch, state.decks[4]?.bpm, state.decks[4]?.isPlaying, state.decks[4]?.syncEnabled,
+      ],
+      () => {
+        const state = useAudioStore.getState();
+        [1, 2, 3, 4].forEach(deckId => {
+          const deck = state.decks[deckId];
+          if (deck && deck.syncEnabled && !deck.scMode) {
+            // Find active master deck
+            const masterId = [1, 2, 3, 4].find(
+              id => id !== deckId && state.decks[id]?.isPlaying && !state.decks[id]?.scMode
+            );
+            if (masterId) {
+              const masterDeck = state.decks[masterId];
+              const activeBpmMaster = masterDeck.bpm * (1 + (masterDeck.pitch || 0) / 100);
+              const targetPitch = ((activeBpmMaster / deck.bpm) - 1) * 100;
+              const clampedPitch = Math.max(-16, Math.min(16, targetPitch));
+              if (Math.abs((deck.pitch || 0) - clampedPitch) > 0.01) {
+                setDeck(deckId, { pitch: clampedPitch });
+              }
+            }
+          }
+        });
+      }
+    );
+    return unsubscribe;
+  }, [setDeck]);
 
   // NOTE: Removed redundant EQ/Filter/Volume subscription.
   // Components now call audioEngine.setEQ/setFilter/setGain directly for zero-latency updates.
@@ -873,7 +966,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     try {
       const cached = await getCachedWaveform(fileKey);
       if (cached) {
-        setDeck(deckId, { bpm: cached.bpm, waveformPeaks: cached.peaks });
+        setDeck(deckId, { bpm: cached.bpm, waveformPeaks: cached.peaks, firstBeatOffset: cached.firstBeatOffset });
+        seekToFirstBeatOneOfBar(deckId, cached.firstBeatOffset || 0, cached.bpm);
         playClick(1100, 'sine', 0.1);
         return;
       }
@@ -884,18 +978,19 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       if (!analysisWorkerRef.current) {
         analysisWorkerRef.current = new Worker('/workers/audioAnalysis.worker.js');
         analysisWorkerRef.current.onmessage = (e: MessageEvent) => {
-          const { bpm, peaks, fileKey: fk, error } = e.data;
+          const { bpm, peaks, firstBeatOffset, fileKey: fk, error } = e.data;
           const cb = workerCallbacksRef.current[fk];
-          if (cb) { cb({ bpm, peaks, error }); delete workerCallbacksRef.current[fk]; }
+          if (cb) { cb({ bpm, peaks, firstBeatOffset, error }); delete workerCallbacksRef.current[fk]; }
         };
       }
 
       const slicedBuffer = await file.slice(0, 4 * 1024 * 1024).arrayBuffer();
 
-      workerCallbacksRef.current[fileKey] = async ({ bpm, peaks, error }: any) => {
+      workerCallbacksRef.current[fileKey] = async ({ bpm, peaks, firstBeatOffset, error }: any) => {
         if (error) { console.error('Analysis worker error:', error); return; }
-        setDeck(deckId, { bpm, waveformPeaks: peaks });
-        await cacheWaveform(fileKey, { bpm, peaks });
+        setDeck(deckId, { bpm, waveformPeaks: peaks, firstBeatOffset });
+        seekToFirstBeatOneOfBar(deckId, firstBeatOffset || 0, bpm);
+        await cacheWaveform(fileKey, { bpm, peaks, firstBeatOffset });
       };
 
       // Transfer the ArrayBuffer to the worker (zero-copy)
@@ -1000,7 +1095,7 @@ const openDB = (): Promise<IDBDatabase> => {
   });
 };
 
-const getCachedWaveform = async (fileKey: string): Promise<{ bpm: number; peaks: number[] } | null> => {
+const getCachedWaveform = async (fileKey: string): Promise<{ bpm: number; peaks: number[]; firstBeatOffset?: number } | null> => {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -1011,7 +1106,7 @@ const getCachedWaveform = async (fileKey: string): Promise<{ bpm: number; peaks:
   } catch (e) { console.warn('IndexedDB read error:', e); return null; }
 };
 
-const cacheWaveform = async (fileKey: string, data: { bpm: number; peaks: number[] }) => {
+const cacheWaveform = async (fileKey: string, data: { bpm: number; peaks: number[]; firstBeatOffset?: number }) => {
   try {
     const db = await openDB();
     db.transaction('waveforms', 'readwrite').objectStore('waveforms').put({ fileKey, ...data });

@@ -29,12 +29,15 @@ export interface DeckState {
   filter: number;
   trim: number;
   syncEnabled: boolean;
+  syncMode?: 'BEAT' | 'BPM';
+  quantizeEnabled?: boolean;
   crossfaderAssign: 'L' | 'R' | 'THRU';
   waveformPeaks: number[];
   cuePoints?: number[];
   loopIn?: number | null;
   loopOut?: number | null;
   isLoopActive?: boolean;
+  firstBeatOffset?: number;
 }
 
 export interface AudioStoreState {
@@ -150,10 +153,11 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/knight-club-session-1',
     bpm: 145, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'L',
+    filter: 50, trim: 50, syncEnabled: false, syncMode: 'BEAT', quantizeEnabled: true, crossfaderAssign: 'L',
     loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-1'] ?? generateStaticPeaks(500),
     cuePoints: [0, 1127, 2112, 2772],
+    firstBeatOffset: 0.0,
   },
   2: {
     id: 'kc-2', title: 'Knight Club: Session 2',
@@ -161,9 +165,11 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/knight-club-session-2',
     bpm: 152, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'L',
+    filter: 50, trim: 50, syncEnabled: false, syncMode: 'BEAT', quantizeEnabled: true, crossfaderAssign: 'L',
     loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-2'] ?? generateStaticPeaks(500),
+    firstBeatOffset: 0.0,
+    cuePoints: [0, 2468, 4084, 6270],
   },
   3: {
     id: 'kc-3', title: 'Knight Club: Session 3',
@@ -171,9 +177,11 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/knight-club-session-3',
     bpm: 150, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'R',
+    filter: 50, trim: 50, syncEnabled: false, syncMode: 'BEAT', quantizeEnabled: true, crossfaderAssign: 'R',
     loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-3'] ?? generateStaticPeaks(500),
+    firstBeatOffset: 0.0,
+    cuePoints: [0, 1940, 3685, 5509],
   },
   4: {
     id: 'kc-4', title: 'Knight Club: Session 4',
@@ -181,9 +189,11 @@ const INITIAL_DECKS: Record<number, DeckState> = {
     link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43',
     bpm: 155, isPlaying: false, isReady: false, scMode: false, pitch: 0,
     progress: 0, duration: 0, volume: 80, eqHi: 50, eqMid: 50, eqLow: 50,
-    filter: 50, trim: 50, syncEnabled: false, crossfaderAssign: 'R',
+    filter: 50, trim: 50, syncEnabled: false, syncMode: 'BEAT', quantizeEnabled: true, crossfaderAssign: 'R',
     loopIn: null, loopOut: null, isLoopActive: false,
     waveformPeaks: trackWaveforms['kc-4'] ?? generateStaticPeaks(500),
+    firstBeatOffset: 0.0,
+    cuePoints: [0, 1834, 3582, 5552],
   },
 };
 

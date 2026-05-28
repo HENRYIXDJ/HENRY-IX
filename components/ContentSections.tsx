@@ -31,36 +31,29 @@ export function Schedule({ isDepth }: { isDepth: boolean }) {
         <div className={cn("h-[1px] flex-grow w-full md:w-auto md:ml-8", isDepth ? "bg-zinc-800" : "bg-black/20")} />
       </motion.div>
 
-      <div className="w-full flex flex-col items-center justify-center py-20 border border-dashed border-zinc-800 rounded-lg bg-zinc-950/20 relative overflow-hidden group">
-        {/* Decorative corner highlights */}
-        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-zinc-700" />
-        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-zinc-700" />
-        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-zinc-700" />
-        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-zinc-700" />
-
-        {/* Pulse effect indicator */}
+      <div className="w-full flex flex-col items-center justify-center py-32 relative px-4">
+        {/* Pulse dot */}
         <motion.div 
           animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="w-3 h-3 rounded-full bg-primary mb-6 shadow-[0_0_12px_rgba(216,22,63,0.6)]"
+          className="w-3 h-3 rounded-full bg-primary mb-10 shadow-[0_0_12px_rgba(216,22,63,0.6)]"
         />
 
         <motion.h3 
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ y: 60, opacity: 0, scale: 0.95 }}
+          whileInView={{ y: 0, opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
-          className="glitch font-sans text-[clamp(2.2rem,10vw,10vw)] font-bold tracking-wider leading-none text-center select-none text-primary mb-3 w-full uppercase"
+          className="glitch font-sans font-bold tracking-wider leading-none text-center select-none text-primary w-full flex flex-col items-center"
           data-text="COMING SOON"
         >
-          COMING SOON
+          <span className="text-[clamp(2.5rem,13vw,13vw)]">COMING</span>
+          <span className="text-[clamp(2.5rem,13vw,13vw)]">SOON</span>
         </motion.h3>
 
-        <p className="font-mono text-[9px] tracking-[0.25em] text-zinc-500 uppercase max-w-md text-center px-4 leading-relaxed">
+        <p className="font-mono text-[9px] tracking-[0.25em] text-zinc-500 uppercase max-w-md text-center px-4 leading-relaxed mt-8">
           TRANSMISSION_STAGED // DATES_UNDER_CLASSIFICATION
         </p>
-
-        {/* Dynamic scanning line element */}
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,3px_100%] opacity-20" />
       </div>
     </motion.section>
   );

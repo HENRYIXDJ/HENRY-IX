@@ -75,6 +75,21 @@ function DualDeckWaveforms({
   const smoothProgressRef = useRef<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0 });
   const lastReportedProgressRef = useRef<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0 });
 
+  const [dragState, setDragState] = useState<{
+    deckNum: number;
+    startX: number;
+    startTime: number;
+    duration: number;
+    startOffset: number;
+    isShift: boolean;
+  } | null>(null);
+
+  const dragStateRef = useRef(dragState);
+
+  useEffect(() => {
+    dragStateRef.current = dragState;
+  }, [dragState]);
+
   // Sync refs to prevent canvas useEffect re-triggering and starving browser repaint
   useEffect(() => {
     leftDeckRef.current = leftDeck;
@@ -340,13 +355,14 @@ function DualDeckWaveforms({
 
         const centerX = width / 2;
 
+        const offset = deck.firstBeatOffset || 0;
         const visibleRangeSec = centerX / pixelsPerSecond;
-        const startBeat = Math.floor((progress - visibleRangeSec) / beatInterval);
-        const endBeat = Math.ceil((progress + visibleRangeSec) / beatInterval);
+        const startBeat = Math.floor((progress - offset - visibleRangeSec) / beatInterval);
+        const endBeat = Math.ceil((progress - offset + visibleRangeSec) / beatInterval);
 
         // Draw Beatgrid lines and BAR numbers / ticks
         for (let b = startBeat; b <= endBeat; b++) {
-          const beatTime = b * beatInterval;
+          const beatTime = offset + b * beatInterval;
           const x = centerX + (beatTime - progress) * pixelsPerSecond;
           if (x >= 0 && x <= width) {
             const isMajorBar = b % 4 === 0;
@@ -449,9 +465,9 @@ function DualDeckWaveforms({
             
             // Dynamic frequency decomposition: Low, Mid, High stacked waves
             // Align low-frequency volume peak with exactly the beat line (using Math.cos instead of Math.sin)
-            const baseLow = hVal * (0.6 + 0.4 * Math.abs(Math.cos(barTime * beatFreq)));
-            const baseMid = hVal * (0.55 + 0.45 * Math.abs(Math.cos(barTime * 1.8 + 0.5)));
-            const baseHigh = hVal * (0.4 + 0.6 * Math.abs(Math.cos(barTime * beatFreq * 4 + 1.2)));
+            const baseLow = hVal * (0.6 + 0.4 * Math.abs(Math.cos((barTime - offset) * beatFreq)));
+            const baseMid = hVal * (0.55 + 0.45 * Math.abs(Math.cos((barTime - offset) * 1.8 + 0.5)));
+            const baseHigh = hVal * (0.4 + 0.6 * Math.abs(Math.cos((barTime - offset) * beatFreq * 4 + 1.2)));
 
             const lowHeight = Math.max(1, baseLow * (laneH - 6) * lowMod * volumeMod);
             const midHeight = Math.max(1, baseMid * (laneH - 10) * midMod * volumeMod);
@@ -564,12 +580,143 @@ function DualDeckWaveforms({
       ctx.fill();
       ctx.restore();
 
+      // 3. GLOSSY HUD BADGE OVERLAY DURING DRAGGING
+      const drag = dragStateRef.current;
+      if (drag) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(10, 10, 12, 0.9)';
+        ctx.strokeStyle = drag.isShift ? '#f59e0b' : '#3b82f6';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'bold 9px monospace';
+        
+        const badgeY = drag.deckNum === leftDeckRef.current?.deckNum ? 8 : height - 22;
+        const offsetVal = (leftDeckRef.current?.deckNum === drag.deckNum 
+          ? leftDeckRef.current?.firstBeatOffset 
+          : rightDeckRef.current?.firstBeatOffset) || 0;
+          
+        const timeVal = leftDeckRef.current?.deckNum === drag.deckNum ? progressLeft : progressRight;
+        
+        const text = drag.isShift 
+          ? `[SHIFT] GRID ADJUST: Offset ${offsetVal.toFixed(3)}s (Release to save)` 
+          : `[DRAG] SCRATCH SEEK: ${timeVal.toFixed(2)}s`;
+          
+        const textWidth = ctx.measureText(text).width;
+        const badgeW = textWidth + 16;
+        const badgeH = 14;
+        const badgeX = (width - badgeW) / 2;
+        
+        if (ctx.roundRect) {
+          ctx.beginPath();
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 4);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+          ctx.fill();
+          ctx.stroke();
+        }
+        
+        ctx.fillStyle = drag.isShift ? '#f59e0b' : '#3b82f6';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, width / 2, badgeY + badgeH / 2 + 0.5);
+        ctx.restore();
+      }
+
       frameId = requestAnimationFrame(render);
     };
 
     frameId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frameId);
   }, [audioElementsRef]);
+
+  const pixelsPerSecond = 55;
+
+  const handleStart = (clientX: number, clientY: number, isShift: boolean) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const scaleY = y * (100 / rect.height);
+    let targetDeck: any = null;
+
+    if (scaleY >= 0 && scaleY <= 44) {
+      targetDeck = leftDeckRef.current;
+    } else if (scaleY >= 56 && scaleY <= 100) {
+      targetDeck = rightDeckRef.current;
+    }
+
+    if (!targetDeck || targetDeck.id === 'locked') return;
+
+    const deckNum = targetDeck.deckNum;
+    const audio = audioElementsRef?.current?.[deckNum];
+    const startTime = audio ? audio.currentTime : (targetDeck.progress || 0);
+    const duration = audio ? audio.duration : (targetDeck.duration || 300);
+    const startOffset = targetDeck.firstBeatOffset || 0;
+
+    setDragState({
+      deckNum,
+      startX: clientX,
+      startTime,
+      duration,
+      startOffset,
+      isShift
+    });
+  };
+
+  const handleMove = (clientX: number) => {
+    const drag = dragStateRef.current;
+    if (!drag) return;
+    const deltaX = clientX - drag.startX;
+    const deltaSec = deltaX / pixelsPerSecond;
+
+    if (drag.isShift) {
+      const newOffset = drag.startOffset + deltaSec;
+      useAudioStore.getState().setDeck(drag.deckNum, { firstBeatOffset: newOffset });
+    } else {
+      const audio = audioElementsRef?.current?.[drag.deckNum];
+      const newTime = Math.max(0, Math.min(drag.duration, drag.startTime - deltaSec));
+      if (audio) {
+        // eslint-disable-next-line react-hooks/immutability
+        audio.currentTime = newTime;
+      }
+      useAudioStore.getState().setDeck(drag.deckNum, { progress: newTime });
+    }
+  };
+
+  const handleEnd = () => {
+    setDragState(null);
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    handleStart(e.clientX, e.clientY, e.shiftKey);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    handleMove(e.clientX);
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+    handleEnd();
+  };
+
+  const onPointerCancel = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (err) {}
+    handleEnd();
+  };
+
+  const cursorClass = dragState 
+    ? (dragState.isShift ? 'cursor-ew-resize' : 'cursor-grabbing') 
+    : 'cursor-grab';
 
   const leftBpm = leftDeck ? (leftDeck.bpm * (1 + (leftDeck.pitch || 0) / 100)).toFixed(2) : "0.00";
   const rightBpm = rightDeck ? (rightDeck.bpm * (1 + (rightDeck.pitch || 0) / 100)).toFixed(2) : "0.00";
@@ -611,7 +758,14 @@ function DualDeckWaveforms({
 
       <div className="relative w-full h-[100px] bg-black rounded border border-zinc-900 overflow-hidden shadow-inner flex items-center justify-center">
         <div className="absolute inset-0 bg-primary/[0.005] pointer-events-none z-10" />
-        <canvas ref={canvasRef} className="w-full h-full block" />
+        <canvas 
+          ref={canvasRef} 
+          className={cn("w-full h-full block touch-none", cursorClass)} 
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
+        />
       </div>
 
       <div className="flex justify-between items-center w-full font-mono text-[7px] text-zinc-500 tracking-wider shrink-0 uppercase border-t border-zinc-900/50 pt-1.5 px-1 select-none">
@@ -728,6 +882,27 @@ function MixArchive({
 
   // --- Global Deck Controls for hotkeys and platters ---
 
+  const getQuantizedDelay = (targetDeckId: number): number => {
+    const deckB = decks[targetDeckId];
+    if (!deckB || !deckB.quantizeEnabled) return 0;
+
+    // Find active master deck
+    const otherDeckId = (targetDeckId === 1 || targetDeckId === 2) ? rightActiveDeck : leftActiveDeck;
+    const deckA = decks[otherDeckId];
+    const audioA = audioElementsRef?.current?.[otherDeckId];
+    if (!deckA || !deckA.isPlaying || !audioA || audioA.paused) return 0;
+
+    const beatIntervalA = 60 / deckA.bpm;
+    const quantizeInterval = beatIntervalA / 4; // 1/4 beat division snap
+
+    const timeA = audioA.currentTime;
+    const currentOffset = timeA % quantizeInterval;
+    const timeToNext = quantizeInterval - currentOffset;
+
+    const realTimeToNext = timeToNext / (1 + (deckA.pitch || 0) / 100);
+    return realTimeToNext * 1000; // in milliseconds
+  };
+
   const triggerHotCue = (deckId: number, percentage: number, cueIndex?: number) => {
     const deck = decks[deckId];
     const isLocked = deck?.id === 'locked';
@@ -735,36 +910,46 @@ function MixArchive({
       playLockoutBlip();
       return;
     }
-    initAudioDSP();
-    const widget = widgetRefs.current[deckId];
-    playClick(1200, 'sine', 0.02);
 
-    const duration = deck.duration || 300;
-    let seekPosSec = percentage * duration;
+    const executeCue = () => {
+      initAudioDSP();
+      const widget = widgetRefs.current[deckId];
+      playClick(1200, 'sine', 0.02);
 
-    // Use absolute custom cue point if defined
-    if (deck.cuePoints && cueIndex !== undefined && deck.cuePoints[cueIndex] !== undefined) {
-      seekPosSec = deck.cuePoints[cueIndex];
-    }
+      const duration = deck.duration || 300;
+      let seekPosSec = percentage * duration;
 
-    if (deck.scMode && widget) {
-      try {
-        widget.seekTo(seekPosSec * 1000);
-      } catch (e) {
+      // Use absolute custom cue point if defined
+      if (deck.cuePoints && cueIndex !== undefined && deck.cuePoints[cueIndex] !== undefined) {
+        seekPosSec = deck.cuePoints[cueIndex];
+      }
+
+      if (deck.scMode && widget) {
+        try {
+          widget.seekTo(seekPosSec * 1000);
+        } catch (e) {
+          setDecks((prev: any) => ({
+            ...prev,
+            [deckId]: { ...prev[deckId], progress: seekPosSec }
+          }));
+        }
+      } else {
+        if (seekLocalBuffer) {
+          seekLocalBuffer(deckId, seekPosSec);
+        }
+
         setDecks((prev: any) => ({
           ...prev,
           [deckId]: { ...prev[deckId], progress: seekPosSec }
         }));
       }
-    } else {
-      if (seekLocalBuffer) {
-        seekLocalBuffer(deckId, seekPosSec);
-      }
+    };
 
-      setDecks((prev: any) => ({
-        ...prev,
-        [deckId]: { ...prev[deckId], progress: seekPosSec }
-      }));
+    const delay = getQuantizedDelay(deckId);
+    if (delay > 10) {
+      setTimeout(executeCue, delay);
+    } else {
+      executeCue();
     }
   };
 
@@ -1000,22 +1185,32 @@ function MixArchive({
         const d1 = decksRef.current[leftDeckId];
         const d2 = decksRef.current[rightDeckId];
         if (d1 && d2 && d1.id !== 'locked') {
-          const targetBpm = d2.bpm * (1 + (d2.pitch || 0) / 100);
-          const requiredPitch = ((targetBpm / d1.bpm) - 1) * 100;
-          const clampedPitch = Math.max(-8, Math.min(8, requiredPitch));
-          useAudioStore.getState().setDeck(leftDeckId, { pitch: clampedPitch });
           playClick(800, 'sine', 0.02);
+          const isBothPlaying = d1.isPlaying && d2.isPlaying;
+          const nextSyncState = isBothPlaying ? true : !d1.syncEnabled;
+          setDecks((prev: any) => ({
+            ...prev,
+            [leftDeckId]: { ...prev[leftDeckId], syncEnabled: nextSyncState }
+          }));
+          if (isBothPlaying && alignSyncPlayback) {
+            alignSyncPlayback(leftDeckId);
+          }
         }
       } else if (e.key === 'd' || e.key === 'D') {
         e.preventDefault();
         const d1 = decksRef.current[rightDeckId];
         const d2 = decksRef.current[leftDeckId];
         if (d1 && d2 && d1.id !== 'locked') {
-          const targetBpm = d2.bpm * (1 + (d2.pitch || 0) / 100);
-          const requiredPitch = ((targetBpm / d1.bpm) - 1) * 100;
-          const clampedPitch = Math.max(-8, Math.min(8, requiredPitch));
-          useAudioStore.getState().setDeck(rightDeckId, { pitch: clampedPitch });
           playClick(800, 'sine', 0.02);
+          const isBothPlaying = d1.isPlaying && d2.isPlaying;
+          const nextSyncState = isBothPlaying ? true : !d1.syncEnabled;
+          setDecks((prev: any) => ({
+            ...prev,
+            [rightDeckId]: { ...prev[rightDeckId], syncEnabled: nextSyncState }
+          }));
+          if (isBothPlaying && alignSyncPlayback) {
+            alignSyncPlayback(rightDeckId);
+          }
         }
       }
     };
@@ -1023,7 +1218,7 @@ function MixArchive({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leftActiveDeck, rightActiveDeck, crossfader, setCrossfader, togglePlayGlobal]);
+  }, [leftActiveDeck, rightActiveDeck, crossfader, setCrossfader, togglePlayGlobal, alignSyncPlayback]);
 
   // Average the parameters of all playing decks for the central mixer display
   const playingDecks = Object.values(decks).filter((d: any) => d.isPlaying);
@@ -1066,9 +1261,9 @@ function MixArchive({
       title: "Knight Club",
       mixes: [
         { id: 'kc-1', title: 'Knight Club: Session 1', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%201%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-1', bpm: 145, isLocalFile: true, cuePoints: [0, 1127, 2112, 2772] },
-        { id: 'kc-2', title: 'Knight Club: Session 2', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%202%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-2', bpm: 152, isLocalFile: true },
-        { id: 'kc-3', title: 'Knight Club: Session 3', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%203%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-3', bpm: 150, isLocalFile: true },
-        { id: 'kc-4', title: 'Knight Club: Session 4', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%204%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43', bpm: 155, isLocalFile: true }
+        { id: 'kc-2', title: 'Knight Club: Session 2', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%202%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-2', bpm: 152, isLocalFile: true, cuePoints: [0, 2468, 4084, 6270] },
+        { id: 'kc-3', title: 'Knight Club: Session 3', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%203%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/knight-club-session-3', bpm: 150, isLocalFile: true, cuePoints: [0, 1940, 3685, 5509] },
+        { id: 'kc-4', title: 'Knight Club: Session 4', url: 'https://6pnumwdmtebaxkbr.public.blob.vercel-storage.com/Knight%20Club%20Audio/Knight%20Club%20Session%204%20MP3.mp3', link: 'https://soundcloud.com/henryixdj/33baa30a-4980-40da-94c2-41085314ec43', bpm: 155, isLocalFile: true, cuePoints: [0, 1834, 3582, 5552] }
       ]
     },
     {
@@ -1244,7 +1439,7 @@ function MixArchive({
           <div className="flex flex-col gap-1 items-center w-12 shrink-0">
             {/* SYNC button */}
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[5px] text-zinc-600 font-mono tracking-widest font-bold">SYNC</span>
+              <span className="text-[5px] text-zinc-600 font-mono tracking-widest font-bold" title="Click to sync. Shift-click to toggle Beat/BPM mode.">SYNC</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1253,27 +1448,44 @@ function MixArchive({
                     return;
                   }
                   playClick(800, 'sine', 0.02);
-                  const nextSyncState = !deck.syncEnabled;
-                  const otherDeckId = (deckId === 1 || deckId === 2) ? rightActiveDeck : leftActiveDeck;
-                  const otherDeck = decks[otherDeckId];
-                  setDecks((prev: any) => ({
-                    ...prev,
-                    [deckId]: { ...prev[deckId], syncEnabled: nextSyncState }
-                  }));
-                  if (nextSyncState && deck.isPlaying && otherDeck && otherDeck.isPlaying && alignSyncPlayback) {
-                    alignSyncPlayback(deckId);
+                  
+                  if (e.shiftKey) {
+                    const nextMode = deck.syncMode === 'BPM' ? 'BEAT' : 'BPM';
+                    setDecks((prev: any) => ({
+                      ...prev,
+                      [deckId]: { ...prev[deckId], syncMode: nextMode }
+                    }));
+                  } else {
+                    const otherDeckId = (deckId === 1 || deckId === 2) ? rightActiveDeck : leftActiveDeck;
+                    const otherDeck = decks[otherDeckId];
+                    const isBothPlaying = deck.isPlaying && otherDeck && otherDeck.isPlaying;
+                    const nextSyncState = isBothPlaying ? true : !deck.syncEnabled;
+                    setDecks((prev: any) => ({
+                      ...prev,
+                      [deckId]: { ...prev[deckId], syncEnabled: nextSyncState }
+                    }));
+                    if (isBothPlaying && alignSyncPlayback) {
+                      alignSyncPlayback(deckId);
+                    }
                   }
                 }}
                 className={cn(
-                  "w-12 h-12 rounded-xl border flex items-center justify-center font-mono text-[10px] font-black transition-all cursor-pointer active:scale-95",
+                  "w-12 h-12 rounded-xl border flex items-center justify-center font-mono text-[9px] font-black transition-all cursor-pointer active:scale-95 flex-col leading-none",
                   isLocked 
                     ? "bg-zinc-950 border-zinc-900/50 text-zinc-800 cursor-not-allowed"
                     : deck.syncEnabled
-                      ? "bg-emerald-500 border-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.6)] font-black"
+                      ? deck.syncMode === 'BPM'
+                        ? "bg-cyan-500 border-cyan-400 text-black shadow-[0_0_12px_rgba(34,211,238,0.6)] font-black"
+                        : "bg-emerald-500 border-emerald-400 text-black shadow-[0_0_12px_rgba(16,185,129,0.6)] font-black"
                       : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
                 )}
               >
-                SYNC
+                <span>SYNC</span>
+                {deck.syncEnabled && (
+                  <span className="text-[5.5px] mt-0.5 font-bold uppercase tracking-tighter opacity-80">
+                    {deck.syncMode || 'BEAT'}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -1302,9 +1514,9 @@ function MixArchive({
               </button>
             </div>
 
-            {/* GRID Adjust button */}
+            {/* QUANTIZE button */}
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[5px] text-zinc-600 font-mono tracking-widest font-bold">GRID</span>
+              <span className="text-[5px] text-zinc-600 font-mono tracking-widest font-bold">QUANTIZE</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1313,12 +1525,21 @@ function MixArchive({
                     return;
                   }
                   playClick(900, 'sine', 0.02);
+                  setDecks((prev: any) => ({
+                    ...prev,
+                    [deckId]: { ...prev[deckId], quantizeEnabled: !prev[deckId].quantizeEnabled }
+                  }));
                 }}
                 className={cn(
-                  "w-12 h-9 rounded-xl border flex items-center justify-center font-mono text-[8.5px] font-black transition-all cursor-pointer active:scale-95 bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
+                  "w-12 h-9 rounded-xl border flex items-center justify-center font-mono text-[8.5px] font-black transition-all cursor-pointer active:scale-95",
+                  isLocked
+                    ? "bg-zinc-950 border-zinc-900/50 text-zinc-800 cursor-not-allowed"
+                    : deck.quantizeEnabled
+                      ? "bg-amber-500 border-amber-400 text-black shadow-[0_0_8px_rgba(245,158,11,0.5)] font-black"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700"
                 )}
               >
-                ADJ
+                Q
               </button>
             </div>
           </div>
@@ -1515,7 +1736,7 @@ function MixArchive({
                 if (!isLocked) {
                   setDecks((prev: any) => ({
                     ...prev,
-                    [deckId]: { ...prev[deckId], pitch: 0 }
+                    [deckId]: { ...prev[deckId], pitch: 0, syncEnabled: false }
                   }));
                   playClick(1000, 'sine', 0.04);
                 } else {
@@ -1549,7 +1770,7 @@ function MixArchive({
                     const pitchVal = parseFloat(e.target.value);
                     setDecks((prev: any) => ({
                       ...prev,
-                      [deckId]: { ...prev[deckId], pitch: pitchVal }
+                      [deckId]: { ...prev[deckId], pitch: pitchVal, syncEnabled: false }
                     }));
                     if (Math.abs(pitchVal) < 0.1) {
                       playClick(880, 'sine', 0.004); // noon snap tactile tick
@@ -1693,6 +1914,34 @@ function MixArchive({
               <span className="text-[5.5px] text-zinc-600 uppercase tracking-widest font-bold">PLAYHEAD</span>
               <span id={`lcd-time-${deckId}`} className="font-bold text-zinc-400 font-mono">
                 {isLocked ? "LOCKED" : formatTime(deck.progress || 0)}
+              </span>
+            </div>
+          </div>
+          
+          {/* New LCD status indicators for SYNC and QUANTIZE */}
+          <div className="grid grid-cols-2 gap-2 mt-0.5 border-t border-zinc-900/20 pt-1 select-none">
+            <div className="flex flex-col">
+              <span className="text-[5.5px] text-zinc-600 uppercase tracking-widest font-bold">SYNC MODE</span>
+              <span className={cn(
+                "font-black text-[7.5px] font-mono tracking-wide uppercase transition-colors duration-300",
+                !deck.syncEnabled 
+                  ? "text-zinc-600" 
+                  : deck.syncMode === 'BPM' 
+                    ? "text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.35)]" 
+                    : "text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.35)]"
+              )}>
+                {deck.syncEnabled ? `${deck.syncMode || 'BEAT'} SYNC` : "SYNC OFF"}
+              </span>
+            </div>
+            <div className="flex flex-col text-right">
+              <span className="text-[5.5px] text-zinc-600 uppercase tracking-widest font-bold">QUANTIZE</span>
+              <span className={cn(
+                "font-black text-[7.5px] font-mono tracking-wide uppercase transition-colors duration-300",
+                deck.quantizeEnabled 
+                  ? "text-amber-500 drop-shadow-[0_0_4px_rgba(245,158,11,0.35)]" 
+                  : "text-zinc-600"
+              )}>
+                {deck.quantizeEnabled ? "QTZ 1/4 ON" : "QTZ OFF"}
               </span>
             </div>
           </div>
