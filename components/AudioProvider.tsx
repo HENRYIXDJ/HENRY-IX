@@ -941,6 +941,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
             className="hidden"
             src={`https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/2129822499&auto_play=false`}
             allow="autoplay"
+            title={`SoundCloud Player Deck ${deckId}`}
           />
         ) : null
       )}

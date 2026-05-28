@@ -1513,6 +1513,8 @@ function MixArchive({
                 max="16"
                 step="0.05"
                 value={deck.pitch || 0}
+                title="Pitch Slider"
+                placeholder="Pitch Slider"
                 onChange={(e) => {
                   if (!isLocked) {
                     const pitchVal = parseFloat(e.target.value);
@@ -1574,6 +1576,7 @@ function MixArchive({
               <div className="flex gap-1 items-center">
                 <select
                   value={deck.id}
+                  title="Select Mix Track"
                   onChange={(e) => {
                     const selectedId = e.target.value;
                     const track = mixGroups.flatMap(g => g.mixes).find(m => m.id === selectedId);
@@ -1635,6 +1638,8 @@ function MixArchive({
                 <input
                   type="file"
                   id={`file-input-${deckId}`}
+                  title="Upload Audio File"
+                  placeholder="Upload Audio File"
                   accept="audio/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -1976,6 +1981,8 @@ function MixArchive({
                       min="0"
                       max="100"
                       value={deck.volume}
+                      title="Volume Fader"
+                      placeholder="Volume Fader"
                       onChange={(e) => {
                         if (!isLocked) {
                           const val = Number(e.target.value);
@@ -2082,6 +2089,8 @@ function MixArchive({
               min="0"
               max="100"
               value={crossfader}
+              title="Crossfader"
+              placeholder="Crossfader"
               onChange={(e) => {
                 const val = Number(e.target.value);
                 setCrossfader(val);
