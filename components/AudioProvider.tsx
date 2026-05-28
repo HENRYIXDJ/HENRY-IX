@@ -67,11 +67,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [preloaderComplete]);
 
-  // ── Initialize Audio DSP and preload on mount ────────────────────────────
-  useEffect(() => {
-    initAudioDSP();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // ── Web Audio persistent DSP routing nodes ──────────────────────────────
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -249,6 +244,12 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
   };
+
+  // ── Initialize Audio DSP and preload on mount ────────────────────────────
+  useEffect(() => {
+    initAudioDSP();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── alignSyncPlayback (Direct BPM & Beat Phase Alignment) ──────────────────
   const alignSyncPlayback = (targetDeckId: number) => {

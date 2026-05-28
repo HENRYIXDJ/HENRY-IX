@@ -776,6 +776,7 @@ function MixArchive({
     const audio = audioElementsRef?.current?.[deckId];
     const deck = decks[deckId];
     if (deck?.loopIn !== undefined && deck?.loopIn !== null && audio) {
+      // eslint-disable-next-line react-hooks/immutability
       audio.currentTime = deck.loopIn;
       useAudioStore.getState().setDeck(deckId, { isLoopActive: true });
       playClick(900, 'sine', 0.02);
