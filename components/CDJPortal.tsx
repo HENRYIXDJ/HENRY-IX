@@ -662,6 +662,7 @@ function MixArchive({
   useEffect(() => { decksRef.current = decks; }, [decks]);
 
   const archiveRef = useRef<HTMLDivElement>(null);
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const [embedSCPlayerId, setEmbedSCPlayerId] = useState<string | null>(null);
@@ -995,6 +996,7 @@ function MixArchive({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leftActiveDeck, rightActiveDeck, crossfader, setCrossfader, togglePlayGlobal]);
 
   // Average the parameters of all playing decks for the central mixer display
@@ -1434,6 +1436,7 @@ function MixArchive({
             >
               {/* Full Artwork Background */}
               {sessionImg && !isLocked && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img 
                   src={sessionImg} 
                   alt="Track Artwork" 
@@ -1613,7 +1616,7 @@ function MixArchive({
                 
                 <button
                   onClick={() => {
-                    const fileInput = document.getElementById(`file-input-${deckId}`);
+                    const fileInput = fileInputRefs.current[deckId];
                     if (fileInput) fileInput.click();
                   }}
                   className="p-2.5 px-3.5 border border-zinc-900 hover:border-zinc-700 bg-zinc-950 rounded-xl text-zinc-400 hover:text-zinc-200 transition-colors flex items-center justify-center shrink-0 cursor-pointer active:scale-95"
@@ -1637,7 +1640,7 @@ function MixArchive({
 
                 <input
                   type="file"
-                  id={`file-input-${deckId}`}
+                  ref={el => { fileInputRefs.current[deckId] = el; }}
                   title="Upload Audio File"
                   placeholder="Upload Audio File"
                   accept="audio/*"
@@ -2177,6 +2180,7 @@ function MixArchive({
                 )}
               >
                 <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-800/80 shadow-2xl">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={getSessionImage(track.title)} 
                     alt={track.title}
